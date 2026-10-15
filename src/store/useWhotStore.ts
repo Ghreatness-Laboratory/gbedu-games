@@ -17,6 +17,7 @@ import {
   newGame,
   playCard,
   drawCard,
+  legalCardIds,
   getPlayerView,
   EngineState,
 } from '@gbedu/whot-engine';
@@ -59,7 +60,7 @@ interface WhotState {
 
   // Realtime Connection
   isConnected: boolean;
-  channel: RealtimeChannel | null;
+  channel: any | null;
   initSocket: () => void;
 
   // Room
@@ -70,6 +71,7 @@ interface WhotState {
   leaveRoom: () => void;
   toggleReady: () => void;
   kickPlayer: (userId: string) => void;
+  addBotPlayer: (name?: string, avatar?: string) => void;
   startGame: () => void;
   updateRules: (ruleset: Partial<Ruleset>) => void;
   applyPreset: (preset: PresetName) => void;
@@ -635,6 +637,44 @@ export const useWhotStore = create<WhotState>((set, get) => {
       }
     },
 
+    addBotPlayer: (name?: string, avatar?: string) => {
+      const { currentRoom, user, channel } = get();
+      if (!currentRoom || !user || currentRoom.hostId !== user.id) return;
+      if (currentRoom.players.length >= currentRoom.maxPlayers) return;
+
+      const botIndex = currentRoom.players.length;
+      const botNames = ['Tobi (AI)', 'Chi (AI)', 'Emeka (AI)', 'Zainab (AI)', 'Femi (AI)'];
+      const botAvatars = ['🦁', '🕶️', '🧢', '💃', '🪘'];
+      const chosenName = name || botNames[(botIndex - 1) % botNames.length];
+      const chosenAvatar = avatar || botAvatars[(botIndex - 1) % botAvatars.length];
+      const botId = `bot_${Date.now()}_${botIndex}`;
+
+      const botPlayer: RoomPlayer = {
+        userId: botId,
+        username: chosenName,
+        displayName: chosenName,
+        avatarUrl: chosenAvatar,
+        seatIndex: botIndex,
+        isHost: false,
+        isReady: true,
+        isConnected: true,
+      };
+
+      const updatedRoom: RoomDetails = {
+        ...currentRoom,
+        players: [...currentRoom.players, botPlayer],
+      };
+      set({ currentRoom: updatedRoom });
+
+      if (channel) {
+        channel.send({
+          type: 'broadcast',
+          event: 'room:update',
+          payload: updatedRoom,
+        });
+      }
+    },
+
     updateRules: (proposedRuleset) => {
       const { currentRoom, user, channel } = get();
       if (!currentRoom || !user || currentRoom.hostId !== user.id) return;
@@ -715,6 +755,8 @@ export const useWhotStore = create<WhotState>((set, get) => {
         gameView: myView,
       });
 
+      triggerBotTurnIfNeeded();
+
       if (channel) {
         channel.send({
           type: 'broadcast',
@@ -753,6 +795,8 @@ export const useWhotStore = create<WhotState>((set, get) => {
 
       if (res.state.gameStatus === 'completed') {
         handleGameWon(res.state);
+      } else {
+        triggerBotTurnIfNeeded();
       }
 
       if (channel) {
@@ -783,6 +827,7 @@ export const useWhotStore = create<WhotState>((set, get) => {
       soundEngine.playShekere();
       const myView = getPlayerView(res.state, user.id);
       set({ engineState: res.state, gameView: myView });
+      triggerBotTurnIfNeeded();
 
       if (channel) {
         channel.send({
@@ -834,7 +879,147 @@ export const useWhotStore = create<WhotState>((set, get) => {
   };
 });
 
-// Helper to configure Supabase Realtime channel for live multiplayer
+class MockRealtimeChannel {
+  private topic: string;
+  private bc: BroadcastChannel | null = null;
+  private listeners: Map<string, Set<(data: { payload: any }) => void>> = new Map();
+
+  constructor(topic: string) {
+    this.topic = topic;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        this.bc = new BroadcastChannel(`gbedu:${topic}`);
+        this.bc.onmessage = (ev) => {
+          const { event, payload } = ev.data || {};
+          if (event && this.listeners.has(event)) {
+            this.listeners.get(event)?.forEach((cb) => cb({ payload }));
+          }
+        };
+      } catch {
+        this.bc = null;
+      }
+    }
+  }
+
+  on(type: string, filter: { event: string }, callback: (data: { payload: any }) => void) {
+    const ev = filter.event;
+    if (!this.listeners.has(ev)) {
+      this.listeners.set(ev, new Set());
+    }
+    this.listeners.get(ev)!.add(callback);
+    return this;
+  }
+
+  subscribe(callback?: (status: string) => void) {
+    setTimeout(() => {
+      if (callback) callback('SUBSCRIBED');
+    }, 10);
+    return this;
+  }
+
+  send(data: { type: string; event: string; payload: any }) {
+    if (this.bc) {
+      try {
+        this.bc.postMessage(data);
+      } catch {}
+    }
+    return Promise.resolve('ok');
+  }
+
+  unsubscribe() {
+    if (this.bc) {
+      this.bc.close();
+      this.bc = null;
+    }
+    this.listeners.clear();
+    return Promise.resolve('ok');
+  }
+}
+
+function triggerBotTurnIfNeeded() {
+  const store = useWhotStore.getState();
+  const { engineState, user, channel } = store;
+  if (!engineState || engineState.gameStatus !== 'playing') return;
+
+  const activePlayer = engineState.players[engineState.activePlayerIndex];
+  if (!activePlayer || !activePlayer.userId.startsWith('bot_')) return;
+
+  setTimeout(() => {
+    const curr = useWhotStore.getState().engineState;
+    if (!curr || curr.gameStatus !== 'playing') return;
+    const currActive = curr.players[curr.activePlayerIndex];
+    if (!currActive || currActive.userId !== activePlayer.userId) return;
+
+    // Find legal cards
+    const legals = legalCardIds(curr, curr.activePlayerIndex);
+    if (legals.length > 0) {
+      // Pick a legal card
+      const chosenId = legals[Math.floor(Math.random() * legals.length)];
+      const chosenCard = currActive.hand.find((c) => c.id === chosenId);
+
+      // If Whot 20, choose most frequent shape in hand
+      let chosenShape: Shape | undefined = undefined;
+      if (chosenCard?.number === 20) {
+        const counts: Record<string, number> = { circle: 0, triangle: 0, cross: 0, square: 0, star: 0 };
+        currActive.hand.forEach((c) => {
+          if (c.shape !== 'whot') counts[c.shape] = (counts[c.shape] || 0) + 1;
+        });
+        const bestShape = (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as Shape) || 'circle';
+        chosenShape = bestShape;
+      }
+
+      const willHave1Left = currActive.hand.length === 2;
+      const willHave0Left = currActive.hand.length === 1;
+
+      const res = playCard(curr, {
+        userId: activePlayer.userId,
+        cardId: chosenId,
+        chosenShape,
+        calledLastCard: willHave1Left,
+        calledCheckUp: willHave0Left,
+      });
+
+      if (res.success) {
+        soundEngine.playHitSound('great');
+        const myView = getPlayerView(res.state, user?.id || '');
+        useWhotStore.setState({ engineState: res.state, gameView: myView });
+
+        if (res.state.gameStatus === 'completed') {
+          handleGameWon(res.state);
+        } else {
+          triggerBotTurnIfNeeded();
+        }
+
+        if (channel) {
+          channel.send({
+            type: 'broadcast',
+            event: 'game:stateSync',
+            payload: { engineState: res.state },
+          });
+        }
+      }
+    } else {
+      // Draw card
+      const res = drawCard(curr, { userId: activePlayer.userId });
+      if (res.success) {
+        soundEngine.playShekere();
+        const myView = getPlayerView(res.state, user?.id || '');
+        useWhotStore.setState({ engineState: res.state, gameView: myView });
+        triggerBotTurnIfNeeded();
+
+        if (channel) {
+          channel.send({
+            type: 'broadcast',
+            event: 'game:stateSync',
+            payload: { engineState: res.state },
+          });
+        }
+      }
+    }
+  }, 1000);
+}
+
+// Helper to configure Realtime channel for live multiplayer
 function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
   const store = useWhotStore.getState();
   const user = store.user;
@@ -844,18 +1029,20 @@ function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
     store.channel.unsubscribe();
   }
 
-  const channel = supabase.channel(`room:${roomCode}`, {
-    config: {
-      broadcast: { ack: true, self: false },
-      presence: { key: user.id },
-    },
-  });
+  const channel: any = isSupabaseConfigured
+    ? supabase.channel(`room:${roomCode}`, {
+        config: {
+          broadcast: { ack: true, self: false },
+          presence: { key: user.id },
+        },
+      })
+    : new MockRealtimeChannel(`room:${roomCode}`);
 
   channel
-    .on('broadcast', { event: 'room:update' }, ({ payload }) => {
+    .on('broadcast', { event: 'room:update' }, ({ payload }: { payload: any }) => {
       useWhotStore.setState({ currentRoom: payload });
     })
-    .on('broadcast', { event: 'room:playerJoined' }, ({ payload }) => {
+    .on('broadcast', { event: 'room:playerJoined' }, ({ payload }: { payload: any }) => {
       const { currentRoom } = useWhotStore.getState();
       if (!currentRoom) return;
       const exists = currentRoom.players.some((p) => p.userId === payload.userId);
@@ -864,7 +1051,7 @@ function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
         useWhotStore.setState({ currentRoom: updated });
       }
     })
-    .on('broadcast', { event: 'room:playerLeft' }, ({ payload }) => {
+    .on('broadcast', { event: 'room:playerLeft' }, ({ payload }: { payload: any }) => {
       const { currentRoom } = useWhotStore.getState();
       if (!currentRoom) return;
       const updated = {
@@ -873,7 +1060,7 @@ function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
       };
       useWhotStore.setState({ currentRoom: updated });
     })
-    .on('broadcast', { event: 'room:kicked' }, ({ payload }) => {
+    .on('broadcast', { event: 'room:kicked' }, ({ payload }: { payload: any }) => {
       const currentUserId = useWhotStore.getState().user?.id;
       if (payload.userId === currentUserId) {
         useWhotStore.getState().leaveRoom();
@@ -886,7 +1073,7 @@ function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
         });
       }
     })
-    .on('broadcast', { event: 'game:started' }, ({ payload }) => {
+    .on('broadcast', { event: 'game:started' }, ({ payload }: { payload: any }) => {
       const currentUserId = useWhotStore.getState().user?.id;
       if (!currentUserId) return;
       soundEngine.playAgogo(true);
@@ -897,7 +1084,7 @@ function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
         gameView: myView,
       });
     })
-    .on('broadcast', { event: 'game:stateSync' }, ({ payload }) => {
+    .on('broadcast', { event: 'game:stateSync' }, ({ payload }: { payload: any }) => {
       const currentUserId = useWhotStore.getState().user?.id;
       if (!currentUserId || !payload.engineState) return;
 
@@ -915,13 +1102,13 @@ function setupRoomRealtime(roomCode: string, initialRoom: RoomDetails) {
         handleGameWon(payload.engineState);
       }
     })
-    .on('broadcast', { event: 'chat:message' }, ({ payload }) => {
+    .on('broadcast', { event: 'chat:message' }, ({ payload }: { payload: any }) => {
       useWhotStore.setState((state) => ({
         chatMessages: [...state.chatMessages, payload],
         unreadChatCount: state.unreadChatCount + 1,
       }));
     })
-    .subscribe((status) => {
+    .subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         useWhotStore.setState({ isConnected: true, channel });
 

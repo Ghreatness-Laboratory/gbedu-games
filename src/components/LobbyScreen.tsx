@@ -14,6 +14,8 @@ import {
   Sparkles,
   UserCheck,
   UserX,
+  Bot,
+  Plus,
 } from 'lucide-react';
 
 export const LobbyScreen: React.FC = () => {
@@ -23,6 +25,7 @@ export const LobbyScreen: React.FC = () => {
     leaveRoom,
     toggleReady,
     kickPlayer,
+    addBotPlayer,
     startGame,
     updateRules,
     applyPreset,
@@ -110,11 +113,22 @@ export const LobbyScreen: React.FC = () => {
             <Users className="w-5 h-5 text-amber-400" />
             <h3 className="text-base font-extrabold text-white">Player Lineup (2-6)</h3>
           </div>
-          <span className="text-xs text-gray-400 font-medium">
-            {currentRoom.players.length < 2
-              ? 'Need at least 1 more player'
-              : 'Ready to play!'}
-          </span>
+          <div className="flex items-center gap-3">
+            {isHost && currentRoom.players.length < currentRoom.maxPlayers && (
+              <button
+                onClick={() => addBotPlayer()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>+ Add AI Opponent</span>
+              </button>
+            )}
+            <span className="text-xs text-gray-400 font-medium">
+              {currentRoom.players.length < 2
+                ? 'Need at least 1 more player'
+                : 'Ready to play!'}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -148,6 +162,11 @@ export const LobbyScreen: React.FC = () => {
                       {isMe && (
                         <span className="text-[10px] text-amber-400 font-bold">(You)</span>
                       )}
+                      {p.userId.startsWith('bot_') && (
+                        <span className="text-[10px] text-cyan-400 font-bold px-1 rounded bg-cyan-500/10 border border-cyan-500/20">
+                          AI
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span
@@ -178,12 +197,23 @@ export const LobbyScreen: React.FC = () => {
 
           {/* Empty Slots */}
           {Array.from({ length: currentRoom.maxPlayers - currentRoom.players.length }).map((_, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-2xl border border-dashed border-white/10 flex items-center justify-center text-xs font-semibold text-gray-500"
-            >
-              + Waiting for player...
-            </div>
+            isHost && idx === 0 ? (
+              <button
+                key={idx}
+                onClick={() => addBotPlayer()}
+                className="p-4 rounded-2xl border border-dashed border-amber-500/40 hover:border-amber-400 bg-amber-500/5 hover:bg-amber-500/10 flex items-center justify-center gap-2 text-xs font-bold text-amber-300 transition-all cursor-pointer group"
+              >
+                <Bot className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                <span>+ Add AI Opponent</span>
+              </button>
+            ) : (
+              <div
+                key={idx}
+                className="p-4 rounded-2xl border border-dashed border-white/10 flex items-center justify-center text-xs font-semibold text-gray-500"
+              >
+                + Waiting for player...
+              </div>
+            )
           ))}
         </div>
 
