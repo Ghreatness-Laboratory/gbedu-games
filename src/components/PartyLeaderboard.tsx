@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PlayerProfile } from '../types';
 import { Trophy, Users, Award, Plus, Trash2, Crown, Sparkles, Flame, Check } from 'lucide-react';
+import { Avatar } from './Avatar';
 import { soundEngine } from '../audio/audioEngine';
 import confetti from 'canvas-confetti';
 
@@ -72,8 +73,15 @@ export const PartyLeaderboard: React.FC<PartyLeaderboardProps> = ({ player }) =>
       {/* Hall of Fame Banner */}
       <div className="bg-[#121826] rounded-3xl p-6 border border-white/10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border-2 border-amber-500/40 flex items-center justify-center text-3xl">
-            🏆
+          <div className="relative shrink-0">
+            <Avatar
+              avatarUrl={player.avatar}
+              avatarId={player.avatarId}
+              config={player.avatarConfig}
+              size={56}
+              showAura={true}
+              interactive={true}
+            />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -143,12 +151,20 @@ export const PartyLeaderboard: React.FC<PartyLeaderboardProps> = ({ player }) =>
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs ${
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
                         isTop ? 'bg-amber-500 text-black' : 'bg-black/30 text-gray-400'
                       }`}
                     >
                       {idx + 1}
                     </span>
+                    <div className="shrink-0">
+                      <Avatar
+                        avatarUrl={p.name === player.name ? player.avatar : `avatar-0${(idx % 9) + 1}`}
+                        size={32}
+                        showAura={isTop}
+                        interactive={false}
+                      />
+                    </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-extrabold text-sm text-white">{p.name}</span>

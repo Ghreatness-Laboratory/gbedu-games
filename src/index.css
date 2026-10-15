@@ -117,6 +117,46 @@ h1, h2, h3, .font-display {
   animation: shake 0.4s ease-in-out;
 }
 
+/* Avatar Animations */
+@keyframes avatar-aura-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes avatar-aura-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes avatar-bob-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3.5px); }
+}
+
+@keyframes avatar-blink {
+  0%, 93%, 97%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.08); }
+}
+
+.animate-avatar-bob {
+  animation: avatar-bob-slow 3s ease-in-out infinite;
+}
+
+.animate-avatar-blink {
+  transform-origin: 50% 37%;
+  animation: avatar-blink 4.5s ease-in-out infinite;
+}
+
+.animate-aura-pulse {
+  transform-origin: 50% 49%;
+  animation: avatar-aura-pulse 2.8s ease-in-out infinite;
+}
+
+.animate-aura-rotate {
+  transform-origin: 50% 49%;
+  animation: avatar-aura-rotate 22s linear infinite;
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-float-1,
@@ -127,7 +167,11 @@ h1, h2, h3, .font-display {
   .animate-eq-3,
   .animate-eq-4,
   .animate-eq-5,
-  .glow-pulse-gold {
+  .glow-pulse-gold,
+  .animate-avatar-bob,
+  .animate-avatar-blink,
+  .animate-aura-pulse,
+  .animate-aura-rotate {
     animation: none !important;
   }
 }

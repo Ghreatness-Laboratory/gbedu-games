@@ -2,6 +2,7 @@ import React from 'react';
 import { GameTab, PlayerProfile } from '../types';
 import { Music, Mic2, Disc3, Trophy, Volume2, VolumeX, Sparkles, User, Flame } from 'lucide-react';
 import { GbeduLogo } from './GbeduLogo';
+import { Avatar } from './Avatar';
 import { soundEngine } from '../audio/audioEngine';
 
 interface NavbarProps {
@@ -55,9 +56,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={onOpenProfile}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold"
             >
-              <span>{player.avatar}</span>
+              <Avatar
+                avatarUrl={player.avatar}
+                avatarId={player.avatarId}
+                config={player.avatarConfig}
+                size={26}
+                showAura={true}
+                interactive={false}
+              />
               <span>{player.totalScore.toLocaleString()}</span>
             </button>
           </div>
@@ -115,8 +123,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenProfile}
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 border border-amber-500/30 hover:border-amber-400/60 transition-all text-left cursor-pointer group"
           >
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-lg border border-amber-500/40 group-hover:scale-105 transition-transform">
-              {player.avatar}
+            <div className="relative shrink-0">
+              <Avatar
+                avatarUrl={player.avatar}
+                avatarId={player.avatarId}
+                config={player.avatarConfig}
+                size={34}
+                showAura={true}
+                interactive={false}
+              />
             </div>
             <div>
               <div className="flex items-center gap-1">

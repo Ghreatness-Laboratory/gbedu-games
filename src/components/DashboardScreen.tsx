@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { Avatar } from './Avatar';
 
 interface GameInvite {
   id: string;
@@ -126,10 +127,16 @@ export const DashboardScreen: React.FC = () => {
       {/* Hero Welcome & Quick Stats */}
       <div className="bg-gradient-to-r from-[#0e1626] via-[#111c30] to-[#0a111e] rounded-3xl p-6 md:p-8 border border-white/10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4 text-center md:text-left">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-emerald-500 p-[2px] shadow-xl shadow-amber-500/20">
-            <div className="w-full h-full bg-[#0b0f17] rounded-[14px] flex items-center justify-center text-3xl">
-              {user.avatarUrl}
-            </div>
+          <div className="relative shrink-0">
+            <Avatar
+              avatarUrl={user.avatarUrl}
+              avatarId={user.avatarId}
+              config={user.avatarConfig as any}
+              username={user.username}
+              size={72}
+              showAura={true}
+              interactive={true}
+            />
           </div>
           <div>
             <div className="flex items-center gap-2 justify-center md:justify-start">

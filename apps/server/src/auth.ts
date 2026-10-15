@@ -67,7 +67,7 @@ export async function verifyUserToken(token: string): Promise<UserProfile | null
   return localProfile || null;
 }
 
-export function registerOrLoginUser(params: { username: string; displayName?: string; avatarUrl?: string }): {
+export function registerOrLoginUser(params: { username: string; displayName?: string; avatarUrl?: string; avatarId?: string; avatarConfig?: any }): {
   success: boolean;
   profile?: UserProfile;
   token?: string;
@@ -90,7 +90,9 @@ export function registerOrLoginUser(params: { username: string; displayName?: st
       id: newId,
       username: cleanUsername,
       displayName: params.displayName?.trim() || cleanUsername,
-      avatarUrl: params.avatarUrl || '👑',
+      avatarUrl: params.avatarUrl || params.avatarId || 'avatar-01',
+      avatarId: params.avatarId || 'avatar-01',
+      avatarConfig: params.avatarConfig || null,
       bio: 'New Whot Contender',
       isOnline: true,
     };
@@ -100,6 +102,9 @@ export function registerOrLoginUser(params: { username: string; displayName?: st
   } else {
     // Existing login: update status
     if (params.displayName) profile.displayName = params.displayName;
+    if (params.avatarUrl) profile.avatarUrl = params.avatarUrl;
+    if (params.avatarId) profile.avatarId = params.avatarId;
+    if (params.avatarConfig) profile.avatarConfig = params.avatarConfig;
   }
 
   // Asynchronously attempt to sync profile to Supabase if table exists
@@ -110,6 +115,8 @@ export function registerOrLoginUser(params: { username: string; displayName?: st
         username: profile.username,
         display_name: profile.displayName,
         avatar_url: profile.avatarUrl,
+        avatar_id: profile.avatarId || 'avatar-01',
+        avatar_config: profile.avatarConfig || null,
         bio: profile.bio,
         is_online: true,
         updated_at: new Date().toISOString(),

@@ -52,6 +52,8 @@ export interface PlayerProfile {
   rhythmHighScore: number;
   lyricsStreak: number;
   unlockedBadges: string[];
+  avatarId?: string;
+  avatarConfig?: any;
 }
 
 export interface MelodyChallenge {

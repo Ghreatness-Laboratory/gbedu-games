@@ -9,6 +9,8 @@ import { LyricsQuiz } from './components/LyricsQuiz';
 import { GuessMelody } from './components/GuessMelody';
 import { PartyLeaderboard } from './components/PartyLeaderboard';
 import { GbeduLogo } from './components/GbeduLogo';
+import { Avatar } from './components/Avatar';
+import { ProfileModal } from './components/ProfileModal';
 import { soundEngine } from './audio/audioEngine';
 import {
   Flame,
@@ -41,6 +43,7 @@ export const App: React.FC = () => {
   } = useWhotStore();
 
   const [activeTab, setActiveTab] = useState<SubTab>('whot');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Initialize Supabase auth session listener
   useEffect(() => {
@@ -110,10 +113,24 @@ export const App: React.FC = () => {
               {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
             </button>
 
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
-              <span className="text-lg">{user.avatarUrl}</span>
-              <span className="text-xs font-extrabold text-white hidden sm:inline">{user.username}</span>
-            </div>
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer group"
+              title="Edit Player Avatar & Profile"
+            >
+              <Avatar
+                avatarUrl={user.avatarUrl}
+                avatarId={user.avatarId}
+                config={user.avatarConfig as any}
+                username={user.username}
+                size={30}
+                showAura={true}
+                interactive={false}
+              />
+              <span className="text-xs font-extrabold text-white group-hover:text-amber-300 hidden sm:inline transition-colors">
+                {user.displayName || user.username}
+              </span>
+            </button>
 
             <button
               onClick={logout}
@@ -176,6 +193,24 @@ export const App: React.FC = () => {
             </div>
           </div>
         </footer>
+      )}
+      {/* Profile & Avatar Customizer Modal */}
+      {isProfileOpen && (
+        <ProfileModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          player={{
+            name: user.displayName || user.username,
+            avatar: user.avatarUrl,
+            avatarId: user.avatarId,
+            avatarConfig: user.avatarConfig,
+            title: 'Odogwu',
+            totalScore: 2500,
+            rhythmHighScore: 3000,
+            lyricsStreak: 5,
+            unlockedBadges: ['b1', 'b4'],
+          }}
+        />
       )}
     </div>
   );

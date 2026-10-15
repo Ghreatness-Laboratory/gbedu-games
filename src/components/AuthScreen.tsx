@@ -17,14 +17,12 @@ import {
 } from 'lucide-react';
 import { GbeduLogo } from './GbeduLogo';
 import { soundEngine } from '../audio/audioEngine';
+import { Avatar } from './Avatar';
+import { AvatarPicker } from './AvatarPicker';
+import { AvatarConfig, DEFAULT_AVATAR_CONFIG, getPresetById } from '../data/avatarData';
 
 // Tagline alternatives for easy swapping:
-// Alternative 1: "Where Every Game Hits Different."
-// Alternative 2: "Rhythm. Rivalry. Rewards."
-// Alternative 3: "Your Turn to Run the Gbedu."
 const DEFAULT_TAGLINE = 'Pull Up. Play On. Gbedu Never Stops.';
-
-const AVATARS = ['👑', '🦁', '🕶️', '🧢', '💃', '🪘', '⭐', '🔥'];
 
 export const AuthScreen: React.FC = () => {
   const { signIn, signUp, loginDemo } = useWhotStore();
@@ -34,7 +32,8 @@ export const AuthScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('👑');
+  const [selectedAvatarId, setSelectedAvatarId] = useState('avatar-01');
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(DEFAULT_AVATAR_CONFIG);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
@@ -97,7 +96,9 @@ export const AuthScreen: React.FC = () => {
         const res = await signUp(email.trim(), password, {
           username: username.trim(),
           displayName: displayName.trim() || username.trim(),
-          avatarUrl: selectedAvatar,
+          avatarUrl: selectedAvatarId,
+          avatarId: selectedAvatarId,
+          avatarConfig: avatarConfig,
         });
         if (!res.success) {
           soundEngine.playWrongSound();
@@ -116,12 +117,13 @@ export const AuthScreen: React.FC = () => {
     }
   };
 
-  const handleQuickDemo = async (demoUsername: string, demoName: string, demoAvatar: string) => {
+  const handleQuickDemo = async (demoUsername: string, demoName: string, demoAvatarId: string) => {
     setLoading(true);
     setError(null);
     soundEngine.playClick();
     try {
-      const res = await loginDemo(demoUsername, demoName, demoAvatar);
+      const preset = getPresetById(demoAvatarId);
+      const res = await loginDemo(demoUsername, demoName, demoAvatarId, demoAvatarId, preset.config);
       if (!res.success) {
         soundEngine.playWrongSound();
         setError(res.error || 'Demo login failed');
@@ -222,7 +224,7 @@ export const AuthScreen: React.FC = () => {
         initial={{ opacity: 0, scale: 0.94, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative z-10 w-full max-w-md bg-gradient-to-b from-[#131b2e]/95 via-[#0f1728]/95 to-[#0b101c]/95 border-2 border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-5 glow-pulse-gold"
+        className={`relative z-10 w-full ${mode === 'signup' ? 'max-w-xl' : 'max-w-md'} bg-gradient-to-b from-[#131b2e]/95 via-[#0f1728]/95 to-[#0b101c]/95 border-2 border-amber-500/30 rounded-3xl p-5 sm:p-7 shadow-2xl backdrop-blur-xl space-y-4 glow-pulse-gold transition-all duration-300`}
       >
         {/* Animated Brand Header */}
         <div className="flex flex-col items-center justify-center text-center pt-1">
@@ -356,29 +358,15 @@ export const AuthScreen: React.FC = () => {
             className="space-y-3.5"
           >
             {mode === 'signup' && (
-              <div>
-                <label className="block text-xs font-black text-gray-300 uppercase tracking-wider mb-2">
-                  Pick Player Avatar
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {AVATARS.map((av) => (
-                    <button
-                      key={av}
-                      type="button"
-                      onClick={() => {
-                        soundEngine.playSeedDrop();
-                        setSelectedAvatar(av);
-                      }}
-                      className={`h-11 rounded-xl text-2xl flex items-center justify-center transition-all cursor-pointer ${
-                        selectedAvatar === av
-                          ? 'bg-amber-500/30 border-2 border-amber-400 scale-105 shadow-md shadow-amber-500/30'
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                      }`}
-                    >
-                      {av}
-                    </button>
-                  ))}
-                </div>
+              <div className="pt-1 pb-1">
+                <AvatarPicker
+                  selectedPresetId={selectedAvatarId}
+                  currentConfig={avatarConfig}
+                  onChange={(presetId, nextConfig) => {
+                    setSelectedAvatarId(presetId);
+                    setAvatarConfig(nextConfig);
+                  }}
+                />
               </div>
             )}
 
@@ -471,18 +459,18 @@ export const AuthScreen: React.FC = () => {
           </p>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { username: 'ada', name: 'Ada', avatar: '👑' },
-              { username: 'tobi', name: 'Tobi', avatar: '🦁' },
-              { username: 'chi', name: 'Chi', avatar: '🕶️' },
+              { username: 'ada', name: 'Ada', avatarId: 'avatar-01' },
+              { username: 'tobi', name: 'Tobi', avatarId: 'avatar-02' },
+              { username: 'chi', name: 'Chi', avatarId: 'avatar-03' },
             ].map((d) => (
               <button
                 key={d.username}
                 type="button"
                 disabled={loading}
-                onClick={() => handleQuickDemo(d.username, d.name, d.avatar)}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black text-gray-200 flex items-center justify-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                onClick={() => handleQuickDemo(d.username, d.name, d.avatarId)}
+                className="p-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-black text-gray-200 flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-105 active:scale-95"
               >
-                <span>{d.avatar}</span>
+                <Avatar avatarId={d.avatarId} size={28} interactive={false} showAura={false} />
                 <span>{d.name}</span>
               </button>
             ))}

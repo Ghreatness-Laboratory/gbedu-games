@@ -51,8 +51,9 @@ interface WhotState {
   isAuthLoading: boolean;
   setUser: (user: UserProfile, token: string) => void;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string, meta: { username: string; displayName?: string; avatarUrl?: string }) => Promise<{ success: boolean; error?: string }>;
-  loginDemo: (username: string, displayName?: string, avatarUrl?: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, meta: { username: string; displayName?: string; avatarUrl?: string; avatarId?: string; avatarConfig?: any }) => Promise<{ success: boolean; error?: string }>;
+  loginDemo: (username: string, displayName?: string, avatarUrl?: string, avatarId?: string, avatarConfig?: any) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (updated: { displayName?: string; avatarUrl?: string; avatarId?: string; avatarConfig?: any; bio?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   initAuth: () => void;
 
@@ -126,7 +127,9 @@ export const useWhotStore = create<WhotState>((set, get) => {
               id: session.user.id,
               username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'player',
               displayName: session.user.user_metadata?.display_name || session.user.user_metadata?.username || 'Player',
-              avatarUrl: session.user.user_metadata?.avatar_url || '👑',
+              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.avatar_id || 'avatar-01',
+              avatarId: session.user.user_metadata?.avatar_id || 'avatar-01',
+              avatarConfig: session.user.user_metadata?.avatar_config || null,
               bio: session.user.user_metadata?.bio || 'Gbedu Whot Contender',
               isOnline: true,
             },
@@ -142,7 +145,9 @@ export const useWhotStore = create<WhotState>((set, get) => {
               id: session.user.id,
               username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'player',
               displayName: session.user.user_metadata?.display_name || session.user.user_metadata?.username || 'Player',
-              avatarUrl: session.user.user_metadata?.avatar_url || '👑',
+              avatarUrl: session.user.user_metadata?.avatar_url || session.user.user_metadata?.avatar_id || 'avatar-01',
+              avatarId: session.user.user_metadata?.avatar_id || 'avatar-01',
+              avatarConfig: session.user.user_metadata?.avatar_config || null,
               bio: session.user.user_metadata?.bio || 'Gbedu Whot Contender',
               isOnline: true,
             },
@@ -219,7 +224,9 @@ export const useWhotStore = create<WhotState>((set, get) => {
             id: data.user.id,
             username: profile?.username || data.user.user_metadata?.username || email.split('@')[0],
             displayName: profile?.display_name || data.user.user_metadata?.display_name || email.split('@')[0],
-            avatarUrl: profile?.avatar_url || data.user.user_metadata?.avatar_url || '👑',
+            avatarUrl: profile?.avatar_url || data.user.user_metadata?.avatar_url || profile?.avatar_id || 'avatar-01',
+            avatarId: profile?.avatar_id || data.user.user_metadata?.avatar_id || 'avatar-01',
+            avatarConfig: profile?.avatar_config || data.user.user_metadata?.avatar_config || null,
             bio: profile?.bio || 'Gbedu Whot Contender',
             isOnline: true,
           };
@@ -238,12 +245,17 @@ export const useWhotStore = create<WhotState>((set, get) => {
     signUp: async (email, password, meta) => {
       set({ isAuthLoading: true });
       try {
+        const resolvedAvatarId = meta.avatarId || (meta.avatarUrl?.startsWith('avatar-') ? meta.avatarUrl : 'avatar-01');
+        const resolvedAvatarUrl = meta.avatarUrl || resolvedAvatarId;
+
         if (!isSupabaseConfigured) {
           const seed: UserProfile = {
             id: `usr_${Date.now()}`,
             username: meta.username.toLowerCase(),
             displayName: meta.displayName || meta.username,
-            avatarUrl: meta.avatarUrl || '👑',
+            avatarUrl: resolvedAvatarUrl,
+            avatarId: resolvedAvatarId,
+            avatarConfig: meta.avatarConfig || null,
             bio: 'New Whot Contender',
             isOnline: true,
           };
@@ -259,7 +271,9 @@ export const useWhotStore = create<WhotState>((set, get) => {
             data: {
               username: meta.username.toLowerCase(),
               display_name: meta.displayName || meta.username,
-              avatar_url: meta.avatarUrl || '👑',
+              avatar_url: resolvedAvatarUrl,
+              avatar_id: resolvedAvatarId,
+              avatar_config: meta.avatarConfig || null,
             },
           },
         });
@@ -274,7 +288,9 @@ export const useWhotStore = create<WhotState>((set, get) => {
             id: data.user.id,
             username: meta.username.toLowerCase(),
             displayName: meta.displayName || meta.username,
-            avatarUrl: meta.avatarUrl || '👑',
+            avatarUrl: resolvedAvatarUrl,
+            avatarId: resolvedAvatarId,
+            avatarConfig: meta.avatarConfig || null,
             bio: 'Gbedu Whot Master',
             isOnline: true,
           };
@@ -285,6 +301,8 @@ export const useWhotStore = create<WhotState>((set, get) => {
             username: userProfile.username,
             display_name: userProfile.displayName,
             avatar_url: userProfile.avatarUrl,
+            avatar_id: userProfile.avatarId,
+            avatar_config: userProfile.avatarConfig,
             bio: userProfile.bio,
             is_online: true,
             updated_at: new Date().toISOString(),
@@ -315,17 +333,21 @@ export const useWhotStore = create<WhotState>((set, get) => {
       }
     },
 
-    loginDemo: async (username, displayName, avatarUrl) => {
+    loginDemo: async (username, displayName, avatarUrl, avatarId, avatarConfig) => {
       const cleanUser = username.toLowerCase();
       const email = `${cleanUser}@gbedugames.com`;
       const password = 'gbedu_demo_password_123';
+      const resolvedAvatarId = avatarId || (avatarUrl?.startsWith('avatar-') ? avatarUrl : 'avatar-01');
+      const resolvedAvatarUrl = avatarUrl || resolvedAvatarId;
 
       if (!isSupabaseConfigured) {
         const seed = SEED_PROFILES[cleanUser] || {
           id: `usr_${cleanUser}`,
           username: cleanUser,
           displayName: displayName || cleanUser,
-          avatarUrl: avatarUrl || '👑',
+          avatarUrl: resolvedAvatarUrl,
+          avatarId: resolvedAvatarId,
+          avatarConfig: avatarConfig || null,
           isOnline: true,
         };
         get().setUser(seed, `token_${seed.id}`);
@@ -340,8 +362,53 @@ export const useWhotStore = create<WhotState>((set, get) => {
       return get().signUp(email, password, {
         username: cleanUser,
         displayName: displayName || cleanUser,
-        avatarUrl: avatarUrl || '👑',
+        avatarUrl: resolvedAvatarUrl,
+        avatarId: resolvedAvatarId,
+        avatarConfig: avatarConfig || null,
       });
+    },
+
+    updateProfile: async (updated) => {
+      const { user, token } = get();
+      if (!user) return { success: false, error: 'Not logged in' };
+
+      const updatedUser: UserProfile = {
+        ...user,
+        displayName: updated.displayName !== undefined ? updated.displayName : user.displayName,
+        avatarUrl: updated.avatarUrl !== undefined ? updated.avatarUrl : user.avatarUrl,
+        avatarId: updated.avatarId !== undefined ? updated.avatarId : user.avatarId,
+        avatarConfig: updated.avatarConfig !== undefined ? updated.avatarConfig : user.avatarConfig,
+        bio: updated.bio !== undefined ? updated.bio : user.bio,
+      };
+
+      get().setUser(updatedUser, token || `token_${user.id}`);
+
+      if (isSupabaseConfigured) {
+        try {
+          await supabase.from('profiles').update({
+            display_name: updatedUser.displayName,
+            avatar_url: updatedUser.avatarUrl,
+            avatar_id: updatedUser.avatarId,
+            avatar_config: updatedUser.avatarConfig,
+            bio: updatedUser.bio,
+            updated_at: new Date().toISOString(),
+          }).eq('id', user.id);
+
+          await supabase.auth.updateUser({
+            data: {
+              display_name: updatedUser.displayName,
+              avatar_url: updatedUser.avatarUrl,
+              avatar_id: updatedUser.avatarId,
+              avatar_config: updatedUser.avatarConfig,
+              bio: updatedUser.bio,
+            },
+          });
+        } catch (e) {
+          console.warn('Could not update profile to Supabase:', e);
+        }
+      }
+
+      return { success: true };
     },
 
     logout: async () => {

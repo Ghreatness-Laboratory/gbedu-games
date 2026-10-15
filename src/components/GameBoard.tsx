@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWhotStore } from '../store/useWhotStore';
 import { WhotCard } from './WhotCard';
+import { Avatar } from './Avatar';
 import { Shape } from '@gbedu/shared';
 import {
   Volume2,
@@ -185,8 +186,14 @@ export const GameBoard: React.FC = () => {
                   : 'bg-black/40 border-white/10'
               } ${!opp.isConnected ? 'opacity-50 grayscale' : ''}`}
             >
-              <div className="relative">
-                <span className="text-xl">{opp.avatarUrl}</span>
+              <div className="relative shrink-0">
+                <Avatar
+                  avatarUrl={opp.avatarUrl}
+                  username={opp.username}
+                  size={34}
+                  showAura={isActive}
+                  interactive={false}
+                />
                 <span
                   className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-black ${
                     opp.isConnected ? 'bg-emerald-500' : 'bg-rose-500'

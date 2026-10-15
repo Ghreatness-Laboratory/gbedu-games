@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWhotStore } from '../store/useWhotStore';
 import { HouseRulesPanel } from './HouseRulesPanel';
+import { Avatar } from './Avatar';
 import {
   Users,
   Copy,
@@ -129,8 +130,14 @@ export const LobbyScreen: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-2xl">
-                    {p.avatarUrl}
+                  <div className="relative shrink-0">
+                    <Avatar
+                      avatarUrl={p.avatarUrl}
+                      username={p.username}
+                      size={44}
+                      showAura={true}
+                      interactive={false}
+                    />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">

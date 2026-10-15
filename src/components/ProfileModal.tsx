@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { PlayerProfile } from '../types';
 import { X, Check, Sparkles, User } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
+import { AvatarPicker } from './AvatarPicker';
+import { AvatarConfig, parseAvatarConfig, DEFAULT_AVATAR_CONFIG } from '../data/avatarData';
+import { useWhotStore } from '../store/useWhotStore';
 
 interface ProfileModalProps {
   player: PlayerProfile;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updated: Partial<PlayerProfile>) => void;
+  onSave?: (updated: Partial<PlayerProfile>) => void;
 }
 
-const AVATARS = ['👑', '🪘', '🕶️', '💃', '🧢', '🦁', '🥁', '🌟'];
 const TITLES = [
   'Odogwu',
   'President of Enjoyment',
@@ -27,70 +29,87 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { updateProfile } = useWhotStore();
+
   const [name, setName] = useState(player.name);
-  const [selectedAvatar, setSelectedAvatar] = useState(player.avatar);
-  const [selectedTitle, setSelectedTitle] = useState(player.title);
+  const [selectedPresetId, setSelectedPresetId] = useState(
+    player.avatarId || (player.avatar?.startsWith('avatar-') ? player.avatar : 'avatar-01')
+  );
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(
+    player.avatarConfig || parseAvatarConfig(player.avatar || 'avatar-01')
+  );
+  const [selectedTitle, setSelectedTitle] = useState(player.title || 'Odogwu');
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     soundEngine.playAgogo(true);
-    onSave({
+    setIsSaving(true);
+
+    const updatedData: Partial<PlayerProfile> = {
       name: name.trim() || 'Gbedu Player',
-      avatar: selectedAvatar,
+      avatar: selectedPresetId,
+      avatarId: selectedPresetId,
+      avatarConfig: avatarConfig,
       title: selectedTitle,
+    };
+
+    if (onSave) {
+      onSave(updatedData);
+    }
+
+    // Persist to store and Supabase
+    await updateProfile({
+      displayName: name.trim() || undefined,
+      avatarUrl: selectedPresetId,
+      avatarId: selectedPresetId,
+      avatarConfig: avatarConfig,
     });
+
+    setIsSaving(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#121927] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-lg bg-gradient-to-b from-[#131b2e] via-[#0f1728] to-[#0b101c] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up my-auto max-h-[92vh] overflow-y-auto">
+        {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-black font-display text-white">Player Identity</h3>
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+              <User className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black font-display text-white">Customize Player Identity</h3>
+              <p className="text-[11px] text-gray-400">Edit your character, drip, and honorary title</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+            className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Avatar Selector */}
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Select Your Avatar
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {AVATARS.map((av) => (
-                <button
-                  key={av}
-                  type="button"
-                  onClick={() => {
-                    soundEngine.playShekere();
-                    setSelectedAvatar(av);
-                  }}
-                  className={`h-12 rounded-2xl text-2xl flex items-center justify-center transition-all cursor-pointer ${
-                    selectedAvatar === av
-                      ? 'bg-amber-500/25 border-2 border-amber-400 scale-105 shadow-md shadow-amber-500/20'
-                      : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  {av}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Avatar Picker with Live Preview, 12 presets and Customizer */}
+          <AvatarPicker
+            selectedPresetId={selectedPresetId}
+            currentConfig={avatarConfig}
+            onChange={(presetId, nextConfig) => {
+              setSelectedPresetId(presetId);
+              setAvatarConfig(nextConfig);
+            }}
+            compact={true}
+          />
 
           {/* Nickname Input */}
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-              Player Nickname
+            <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
+              Player Nickname / Tag
             </label>
             <input
               type="text"
@@ -104,7 +123,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
           {/* Title Selector */}
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
               Honorary African Title
             </label>
             <select
@@ -124,10 +143,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 text-black font-extrabold text-sm hover:scale-[1.02] active:scale-98 transition-all shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isSaving}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Check className="w-4 h-4 stroke-[3]" />
-              <span>SAVE PROFILE</span>
+              <span>{isSaving ? 'SAVING IDENTITY...' : 'SAVE & APPLY DRIP'}</span>
             </button>
           </div>
         </form>

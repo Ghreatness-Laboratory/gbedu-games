@@ -7,6 +7,8 @@ export interface UserProfile {
   avatarUrl: string;
   bio?: string;
   isOnline?: boolean;
+  avatarId?: string;
+  avatarConfig?: Record<string, string>;
 }
 
 export interface RoomPlayer {
