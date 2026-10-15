@@ -10,7 +10,7 @@ export interface AvatarProps {
   aura?: AvatarConfig['aura'];
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'preview' | number;
   avatarId?: string;
-  config?: AvatarConfig;
+  config?: AvatarConfig | Record<string, any>;
   avatarUrl?: string;
   username?: string;
   className?: string;

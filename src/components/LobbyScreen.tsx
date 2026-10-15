@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useWhotStore } from '../store/useWhotStore';
 import { HouseRulesPanel } from './HouseRulesPanel';
 import { Avatar } from './Avatar';
+import { DEFAULT_RULESET } from '@gbedu/whot-engine';
+import { PresetName } from '@gbedu/shared';
 import {
   Users,
   Copy,
@@ -270,8 +272,8 @@ export const LobbyScreen: React.FC = () => {
 
       {/* House Rules Configuration Panel */}
       <HouseRulesPanel
-        ruleset={currentRoom.ruleset}
-        preset={currentRoom.preset}
+        ruleset={currentRoom.ruleset || DEFAULT_RULESET}
+        preset={(currentRoom.preset as PresetName) || 'naija_classic'}
         isHost={isHost}
         onUpdateRules={updateRules}
         onApplyPreset={applyPreset}

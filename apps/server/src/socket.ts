@@ -168,8 +168,8 @@ export function setupSocketIO(io: SocketIOServer<ClientToServerEvents, ServerToC
     socket.on('rules:update', (data) => {
       if (!currentRoomId) return;
       const res = updateHouseRules(currentRoomId, user.id, data.ruleset);
-      if (res.success && res.room) {
-        io.to(currentRoomId).emit('rules:changed', { ruleset: res.room.ruleset, preset: res.room.preset });
+      if (res.success && res.room && res.room.ruleset && res.room.preset) {
+        io.to(currentRoomId).emit('rules:changed', { ruleset: res.room.ruleset, preset: res.room.preset as PresetName });
         io.to(currentRoomId).emit('room:readyCleared');
         broadcastRoomUpdate(currentRoomId);
       }
@@ -179,8 +179,8 @@ export function setupSocketIO(io: SocketIOServer<ClientToServerEvents, ServerToC
     socket.on('rules:preset', (data) => {
       if (!currentRoomId) return;
       const res = applyPresetRules(currentRoomId, user.id, data.preset);
-      if (res.success && res.room) {
-        io.to(currentRoomId).emit('rules:changed', { ruleset: res.room.ruleset, preset: res.room.preset });
+      if (res.success && res.room && res.room.ruleset && res.room.preset) {
+        io.to(currentRoomId).emit('rules:changed', { ruleset: res.room.ruleset, preset: res.room.preset as PresetName });
         io.to(currentRoomId).emit('room:readyCleared');
         broadcastRoomUpdate(currentRoomId);
       }
@@ -190,8 +190,8 @@ export function setupSocketIO(io: SocketIOServer<ClientToServerEvents, ServerToC
     socket.on('rules:reset', () => {
       if (!currentRoomId) return;
       const res = applyPresetRules(currentRoomId, user.id, 'naija_classic');
-      if (res.success && res.room) {
-        io.to(currentRoomId).emit('rules:changed', { ruleset: res.room.ruleset, preset: res.room.preset });
+      if (res.success && res.room && res.room.ruleset && res.room.preset) {
+        io.to(currentRoomId).emit('rules:changed', { ruleset: res.room.ruleset, preset: res.room.preset as PresetName });
         io.to(currentRoomId).emit('room:readyCleared');
         broadcastRoomUpdate(currentRoomId);
       }

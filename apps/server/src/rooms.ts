@@ -258,6 +258,22 @@ export function startRoom(
   return { success: true, room };
 }
 
+export function setPlayerReady(
+  roomId: string,
+  userId: string,
+  isReady: boolean
+): { success: boolean; room?: RoomDetails; error?: string } {
+  const room = roomsById.get(roomId);
+  if (!room) return { success: false, error: 'Room not found' };
+
+  const player = room.players.find((p) => p.userId === userId);
+  if (!player) return { success: false, error: 'Player not in room' };
+
+  player.isReady = isReady;
+  room.lastActivity = new Date().toISOString();
+  return { success: true, room };
+}
+
 export function kickPlayer(roomId: string, hostId: string, targetUserId: string): { success: boolean; room?: RoomDetails; error?: string } {
   const room = roomsById.get(roomId);
   if (!room) return { success: false, error: 'Room not found' };

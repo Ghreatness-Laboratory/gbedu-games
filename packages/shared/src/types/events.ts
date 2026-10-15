@@ -9,7 +9,7 @@ export interface UserProfile {
   bio?: string;
   isOnline?: boolean;
   avatarId?: string;
-  avatarConfig?: Record<string, string>;
+  avatarConfig?: Record<string, any>;
 }
 
 export interface RoomPlayer {
@@ -19,6 +19,7 @@ export interface RoomPlayer {
   displayName: string;
   avatarUrl: string;
   avatarId?: string;
+  avatarConfig?: Record<string, any>;
   seatIndex: number;
   isHost: boolean;
   isReady: boolean;
