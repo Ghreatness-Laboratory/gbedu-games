@@ -7,6 +7,7 @@ import {
   useLocation,
   useSearchParams,
 } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useWhotStore } from './store/useWhotStore';
 import { AuthScreen } from './components/AuthScreen';
 import { DashboardScreen } from './components/DashboardScreen';
@@ -16,20 +17,19 @@ import { LyricsQuiz } from './components/LyricsQuiz';
 import { GuessMelody } from './components/GuessMelody';
 import { PartyLeaderboard } from './components/PartyLeaderboard';
 import { GbeduLogo } from './components/GbeduLogo';
-import { Avatar } from './components/Avatar';
 import { ProfileModal } from './components/ProfileModal';
+import { JoinRoomModal } from './components/JoinRoomModal';
 import { soundEngine } from './audio/audioEngine';
 import {
-  Flame,
-  Mic2,
-  Disc3,
-  Music,
+  Home,
+  Gamepad2,
+  Hash,
   Trophy,
+  User,
   Volume2,
   VolumeX,
   LogOut,
   Sparkles,
-  Gamepad2,
   X,
 } from 'lucide-react';
 
@@ -38,7 +38,8 @@ const GamePickerSheet = lazy(() =>
   import('./components/GamePickerSheet').then((m) => ({ default: m.GamePickerSheet }))
 );
 
-type SubTab = 'games' | 'beatmaker' | 'lyrics' | 'guess' | 'party';
+type NavTabId = 'home' | 'games' | 'rooms' | 'ranks' | 'profile';
+type AppSubView = 'home' | 'beatmaker' | 'lyrics' | 'guess' | 'ranks';
 
 export const App: React.FC = () => {
   const {
@@ -56,10 +57,11 @@ export const App: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<SubTab>('games');
+  const [activeSubView, setActiveSubView] = useState<AppSubView>('home');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isJoinRoomOpen, setIsJoinRoomOpen] = useState(false);
 
   // Sync picker state from URL query param (?picker=open)
   const isPickerOpen = searchParams.get('picker') === 'open';
@@ -78,14 +80,13 @@ export const App: React.FC = () => {
       if ('requestIdleCallback' in window) {
         (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(prefetch);
       } else {
-        setTimeout(prefetch, 1200);
+        setTimeout(prefetch, 1000);
       }
     }
   }, []);
 
   const handleOpenPicker = () => {
     soundEngine.playClick();
-    // Use push navigation so back button on mobile closes picker first
     const newParams = new URLSearchParams(searchParams);
     newParams.set('picker', 'open');
     navigate({ search: newParams.toString() });
@@ -94,149 +95,174 @@ export const App: React.FC = () => {
   const handleClosePicker = () => {
     soundEngine.playClick();
     if (isPickerOpen) {
-      // Step back in history so phone back button mirrors this
       navigate(-1);
     }
   };
 
   const handleSelectGame = (gameId: string) => {
     soundEngine.playAgogo(true);
-    // Navigate to game lobby without the ?picker=open query
+    setActiveSubView('home');
     navigate(`/game/${gameId}`);
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#0b1426] text-white flex flex-col justify-between">
+      <div className="min-h-[100dvh] bg-[#0d1426] text-white flex flex-col justify-between">
         <AuthScreen />
-        <footer className="py-4 text-center text-xs text-gray-500 border-t border-white/5">
+        <footer className="py-4 text-center text-xs text-gray-500 border-t border-[#26314d]">
           Gbedu Games • Real Multiplayer Naija Party Games • FragNaija by Ghreatness Laboratory
         </footer>
       </div>
     );
   }
 
-  // Determine if we are on a game route
   const isGameRoute = location.pathname.startsWith('/game/');
 
+  // Determine active bottom nav tab
+  let activeNavTab: NavTabId = 'home';
+  if (isPickerOpen) {
+    activeNavTab = 'games';
+  } else if (isJoinRoomOpen) {
+    activeNavTab = 'rooms';
+  } else if (activeSubView === 'ranks') {
+    activeNavTab = 'ranks';
+  } else if (isProfileOpen) {
+    activeNavTab = 'profile';
+  } else if (location.pathname === '/home') {
+    activeNavTab = 'home';
+  }
+
+  const bottomNavItems = [
+    {
+      id: 'home' as NavTabId,
+      label: 'Home',
+      icon: <Home className="w-5 h-5" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setActiveSubView('home');
+        navigate('/home');
+      },
+    },
+    {
+      id: 'games' as NavTabId,
+      label: 'Games',
+      icon: <Gamepad2 className="w-5 h-5" />,
+      onClick: () => {
+        handleOpenPicker();
+      },
+    },
+    {
+      id: 'rooms' as NavTabId,
+      label: 'Rooms',
+      icon: <Hash className="w-5 h-5" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setIsJoinRoomOpen(true);
+      },
+    },
+    {
+      id: 'ranks' as NavTabId,
+      label: 'Ranks',
+      icon: <Trophy className="w-5 h-5" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setActiveSubView('ranks');
+      },
+    },
+    {
+      id: 'profile' as NavTabId,
+      label: 'Profile',
+      icon: <User className="w-5 h-5" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setIsProfileOpen(true);
+      },
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0b1426] text-white flex flex-col selection:bg-amber-500 selection:text-black">
-      {/* Universal Top Header */}
-      <header className="sticky top-0 z-40 bg-[#0d1527]/90 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          {/* Official Logo & Tagline */}
-          <div
-            onClick={() => {
-              setActiveTab('games');
-              navigate('/home');
-            }}
-            className="flex items-center gap-2 cursor-pointer group"
+    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#0d1426] text-white flex flex-col select-none pt-[env(safe-area-inset-top)] selection:bg-[#ff7a00] selection:text-black">
+      {/* 1. SLIM HEADER (48px) */}
+      <header className="sticky top-0 z-40 h-12 min-h-[48px] max-h-[48px] bg-[#0d1426] border-b border-[#26314d] px-3 sm:px-4 flex items-center justify-between shrink-0">
+        {/* Logo icon + "GBEDU GAMES" on one line (No 'PLAY • CONNECT • WIN') */}
+        <div
+          onClick={() => {
+            setActiveSubView('home');
+            navigate('/home');
+          }}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
+          <GbeduLogo size="xs" iconOnly={true} />
+          <span className="font-display font-black text-sm tracking-tight text-white whitespace-nowrap">
+            GBEDU <span className="text-[#ff7a00]">GAMES</span>
+          </span>
+        </div>
+
+        {/* Mute and Logout buttons (44px min tap targets) */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={toggleMute}
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl hover:bg-white/5 active:bg-white/10 text-gray-300 transition-colors flex items-center justify-center cursor-pointer"
+            title={isMuted ? 'Unmute' : 'Mute'}
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
-            <GbeduLogo size="md" />
-            <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              GAMES HUB
-            </span>
-          </div>
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-rose-400" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-[#1fd1a0]" />
+            )}
+          </button>
 
-          {/* Nav Tabs (When outside live game) */}
-          {!gameView && !currentRoom && (
-            <nav className="hidden md:flex items-center gap-1.5">
-              {[
-                { id: 'games', label: 'Games Hub', icon: <Gamepad2 className="w-4 h-4 text-amber-400" />, path: '/home' },
-                { id: 'beatmaker', label: 'Beat Maker', icon: <Disc3 className="w-4 h-4 text-rose-400" /> },
-                { id: 'lyrics', label: 'Lyrics Quiz', icon: <Mic2 className="w-4 h-4 text-emerald-400" /> },
-                { id: 'guess', label: 'Whot & Tune', icon: <Music className="w-4 h-4 text-cyan-400" /> },
-                { id: 'party', label: 'Hall of Fame', icon: <Trophy className="w-4 h-4 text-yellow-400" /> },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    setActiveTab(t.id as SubTab);
-                    if (t.path) {
-                      navigate(t.path);
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === t.id && (!isGameRoute || t.id !== 'games')
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
-                  }`}
-                >
-                  {t.icon}
-                  <span>{t.label}</span>
-                </button>
-              ))}
-            </nav>
-          )}
-
-          {/* Right Controls: Sound, Profile & Logout */}
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={toggleMute}
-              className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-colors flex items-center justify-center cursor-pointer"
-              title={isMuted ? 'Unmute' : 'Mute'}
-              aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
-            >
-              {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
-            </button>
-
-            <button
-              onClick={() => setIsProfileOpen(true)}
-              className="min-h-[40px] flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer group"
-              title="Edit Player Avatar & Profile"
-            >
-              <Avatar
-                avatarUrl={user.avatarUrl}
-                avatarId={user.avatarId}
-                config={user.avatarConfig as any}
-                username={user.username}
-                size={30}
-                showAura={true}
-                interactive={false}
-              />
-              <span className="text-xs font-extrabold text-white group-hover:text-amber-300 hidden sm:inline transition-colors">
-                {user.displayName || user.username}
-              </span>
-            </button>
-
-            <button
-              onClick={logout}
-              className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-300 transition-colors flex items-center justify-center cursor-pointer"
-              title="Log Out"
-              aria-label="Log out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            onClick={logout}
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl hover:bg-rose-500/10 active:bg-rose-500/20 text-gray-400 hover:text-rose-400 transition-colors flex items-center justify-center cursor-pointer"
+            title="Log Out"
+            aria-label="Log Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
       {/* Global Toast Notification */}
       {notification && (
-        <div className="fixed top-16 right-4 z-50 max-w-sm bg-[#121927] border-2 border-amber-500/50 rounded-2xl p-4 shadow-2xl flex items-start gap-3 animate-scale-up">
-          <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="fixed top-14 right-3 left-3 sm:left-auto sm:right-4 z-50 max-w-sm bg-[#141d33] border-2 border-[#ff7a00]/60 rounded-2xl p-3.5 shadow-2xl flex items-start gap-3 animate-scale-up">
+          <Sparkles className="w-5 h-5 text-[#ffb703] shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs font-black text-white">{notification.title}</p>
             <p className="text-[11px] text-gray-300 mt-0.5">{notification.body}</p>
           </div>
-          <button onClick={clearNotification} className="text-gray-400 hover:text-white cursor-pointer">
+          <button onClick={clearNotification} className="text-gray-400 hover:text-white cursor-pointer min-w-[32px] min-h-[32px] flex items-center justify-center">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Main Content Arena */}
-      <main className={`flex-1 flex flex-col justify-center ${!gameView && !currentRoom ? 'pb-16 md:pb-0' : ''}`}>
-        {activeTab !== 'games' ? (
-          activeTab === 'beatmaker' ? (
-            <BeatMaker />
-          ) : activeTab === 'lyrics' ? (
-            <LyricsQuiz onScoreUpdate={() => {}} />
-          ) : activeTab === 'guess' ? (
-            <GuessMelody onScoreUpdate={() => {}} />
-          ) : (
-            <PartyLeaderboard player={{ name: user.displayName, avatar: user.avatarUrl, title: 'Odogwu', totalScore: 2500, rhythmHighScore: 3000, lyricsStreak: 5, unlockedBadges: ['b1', 'b4'] }} />
-          )
+      {/* Main Screen Arena (100dvh fitted, with padding for bottom nav) */}
+      <main className={`flex-1 min-h-0 overflow-hidden flex flex-col justify-between ${!gameView ? 'pb-[60px]' : ''}`}>
+        {activeSubView === 'ranks' ? (
+          <div className="flex-1 flex flex-col overflow-y-auto">
+            <div className="px-4 py-2 flex items-center justify-between border-b border-[#26314d] shrink-0">
+              <span className="text-xs font-black uppercase text-[#ffb703]">Hall of Fame</span>
+              <button
+                onClick={() => setActiveSubView('home')}
+                className="text-xs text-gray-400 hover:text-white font-bold cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
+            <PartyLeaderboard
+              player={{
+                name: user.displayName || user.username,
+                avatar: user.avatarUrl,
+                title: user.bio || 'Odogwu',
+                totalScore: (stats.gamesWon || 0) * 500 + 1000,
+                rhythmHighScore: 3000,
+                lyricsStreak: stats.streak || 1,
+                unlockedBadges: ['b1', 'b4'],
+              }}
+            />
+          </div>
         ) : (
           <Routes>
             <Route
@@ -258,51 +284,52 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      {!gameView && !currentRoom && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d1527]/95 backdrop-blur-md border-t border-white/10 px-2 py-2 flex items-center justify-around shadow-2xl">
-          {[
-            { id: 'games', label: 'Games', icon: <Gamepad2 className="w-5 h-5 text-amber-400" />, path: '/home' },
-            { id: 'beatmaker', label: 'Beats', icon: <Disc3 className="w-5 h-5 text-rose-400" /> },
-            { id: 'lyrics', label: 'Lyrics', icon: <Mic2 className="w-5 h-5 text-emerald-400" /> },
-            { id: 'guess', label: 'Melody', icon: <Music className="w-5 h-5 text-cyan-400" /> },
-            { id: 'party', label: 'Fame', icon: <Trophy className="w-5 h-5 text-yellow-400" /> },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setActiveTab(t.id as SubTab);
-                if (t.path) {
-                  navigate(t.path);
-                }
-              }}
-              className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-                activeTab === t.id && (!isGameRoute || t.id !== 'games')
-                  ? 'text-amber-300 bg-amber-500/15 border border-amber-500/30'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {t.icon}
-              <span>{t.label}</span>
-            </button>
-          ))}
-        </nav>
-      )}
-
-      {/* Footer */}
+      {/* 7. FIXED BOTTOM NAV (5 TABS: Home, Games, Rooms, Ranks, Profile) */}
+      {/* Hidden during active games (gameView) and on login screen */}
       {!gameView && (
-        <footer className="border-t border-white/10 bg-[#080d1a] py-4 px-4 text-center text-xs text-gray-500 mb-16 md:mb-0">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2 justify-center">
-              <span className="text-amber-400 font-extrabold">GBEDU GAMES</span>
-              <span>•</span>
-              <span>African Music & Party Games Hub</span>
-            </div>
-            <div className="text-gray-400 text-[11px]">
-              Single Authority Game Engine • Pure TypeScript • 10+ Party & Board Games
-            </div>
-          </div>
-        </footer>
+        <nav
+          aria-label="App Navigation"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1426]/95 backdrop-blur-md border-t border-[#26314d] px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none shrink-0"
+        >
+          {bottomNavItems.map((item) => {
+            const isActive = activeNavTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={item.onClick}
+                className="relative min-w-[44px] min-h-[44px] px-2 py-1 flex-1 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-colors"
+                aria-label={item.label}
+              >
+                {/* Animated Sliding Active Pill */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeBottomNavPill"
+                    transition={{ type: 'spring', damping: 24, stiffness: 320 }}
+                    className="absolute inset-0 bg-[#ff7a00]/15 border border-[#ff7a00]/30 rounded-xl"
+                  />
+                )}
+
+                {/* Icon with bounce on tap */}
+                <motion.div
+                  whileTap={{ scale: 0.82 }}
+                  className={`relative z-10 transition-colors ${
+                    isActive ? 'text-[#ff7a00]' : 'text-gray-400'
+                  }`}
+                >
+                  {item.icon}
+                </motion.div>
+
+                <span
+                  className={`relative z-10 text-[10px] font-bold mt-0.5 transition-colors leading-none ${
+                    isActive ? 'text-[#ff7a00]' : 'text-gray-400'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
       )}
 
       {/* Lazy-Loaded GamePickerSheet */}
@@ -313,6 +340,15 @@ export const App: React.FC = () => {
           onSelectGame={handleSelectGame}
         />
       </Suspense>
+
+      {/* Join Room Modal */}
+      {isJoinRoomOpen && (
+        <JoinRoomModal
+          isOpen={isJoinRoomOpen}
+          onClose={() => setIsJoinRoomOpen(false)}
+          onSelectGamePrompt={handleOpenPicker}
+        />
+      )}
 
       {/* Profile & Avatar Customizer Modal */}
       {isProfileOpen && user && (

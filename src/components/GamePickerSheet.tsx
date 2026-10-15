@@ -134,17 +134,17 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                 onClose();
               }
             }}
-            className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0e1628] border-t sm:border border-white/15 rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[88dvh] sm:max-h-[85vh] flex flex-col z-50 text-white pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0d1426] border-t sm:border border-[#26314d] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[88dvh] sm:max-h-[85vh] flex flex-col z-50 text-white pb-[max(1rem,env(safe-area-inset-bottom))]"
           >
             {/* Drag Handle Bar (Mobile Only) */}
             <div className="pt-3 pb-1 flex justify-center sm:hidden cursor-grab active:cursor-grabbing">
-              <div className="w-12 h-1.5 rounded-full bg-white/25 hover:bg-white/40 transition-colors" />
+              <div className="w-12 h-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors" />
             </div>
 
             {/* Sticky Header */}
-            <div className="sticky top-0 z-20 bg-[#0e1628]/95 backdrop-blur-md px-5 py-3.5 border-b border-white/10 flex items-center justify-between gap-4">
+            <div className="sticky top-0 z-20 bg-[#0d1426]/95 backdrop-blur-md px-5 py-3.5 border-b border-[#26314d] flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-lg">
+                <div className="w-9 h-9 rounded-xl bg-[#ff7a00]/15 border border-[#ff7a00]/30 flex items-center justify-center text-[#ff7a00] font-black text-lg">
                   🎮
                 </div>
                 <div>
@@ -163,14 +163,14 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                   onClose();
                 }}
                 aria-label="Close game selector"
-                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/5 hover:bg-white/15 active:scale-95 text-gray-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-gray-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Category Filter Chips Bar */}
-            <div className="px-5 py-2.5 border-b border-white/5 bg-[#0b1220]/60 overflow-x-auto scrollbar-none flex items-center gap-2">
+            <div className="px-5 py-2.5 border-b border-[#26314d] bg-[#0d1426]/80 overflow-x-auto scrollbar-none flex items-center gap-2">
               {CATEGORIES.map((cat) => {
                 const isActive = selectedCategory === cat;
                 return (
@@ -182,8 +182,8 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                     }}
                     className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
                       isActive
-                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/30'
-                        : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                        ? 'bg-[#ff7a00] text-black shadow-md shadow-[#ff7a00]/30'
+                        : 'bg-[#141d33] text-gray-400 hover:text-white hover:bg-[#1a2540] border border-[#26314d]'
                     }`}
                   >
                     <span>{cat}</span>
@@ -202,7 +202,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
               {/* Highlighted "Last Played" Banner (If in 'All' category and game is playable) */}
               {selectedCategory === 'All' && lastPlayed && (
                 <div className="relative group">
-                  <div className="text-[10px] font-black tracking-wider uppercase text-amber-400 mb-1.5 flex items-center gap-1.5">
+                  <div className="text-[10px] font-black tracking-wider uppercase text-[#ffb703] mb-1.5 flex items-center gap-1.5">
                     <History className="w-3.5 h-3.5" />
                     <span>Last Played Game</span>
                   </div>
@@ -210,10 +210,10 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleCardClick(lastPlayed)}
-                    className="relative p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-[#162238] border-2 border-amber-400/50 hover:border-amber-400 shadow-xl flex items-center justify-between gap-4 cursor-pointer overflow-hidden transition-all"
+                    className="relative p-4 rounded-2xl bg-gradient-to-r from-[#ff7a00]/20 via-[#ffb703]/10 to-[#141d33] border-2 border-[#ffb703]/50 hover:border-[#ffb703] shadow-xl flex items-center justify-between gap-4 cursor-pointer overflow-hidden transition-all"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-14 h-14 rounded-2xl bg-amber-500/30 border border-amber-400/40 flex items-center justify-center text-3xl shrink-0 group-hover:scale-105 transition-transform shadow-inner">
+                      <div className="w-14 h-14 rounded-2xl bg-[#ff7a00]/25 border border-[#ffb703]/40 flex items-center justify-center text-3xl shrink-0 group-hover:scale-105 transition-transform shadow-inner">
                         {lastPlayed.icon}
                       </div>
                       <div>
@@ -221,7 +221,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                           <h3 className="text-base sm:text-lg font-black font-display text-white">
                             {lastPlayed.name}
                           </h3>
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-[#1fd1a0]/15 text-[#1fd1a0] border border-[#1fd1a0]/30">
                             Playable
                           </span>
                         </div>
@@ -230,16 +230,16 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                         </p>
                         <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold text-gray-400">
                           <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3 text-amber-400" />
+                            <Users className="w-3 h-3 text-[#ffb703]" />
                             {lastPlayed.playerCount}
                           </span>
                           <span>•</span>
-                          <span className="text-amber-300">{lastPlayed.category}</span>
+                          <span className="text-[#ffb703]">{lastPlayed.category}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-amber-500 text-black font-extrabold text-xs px-3 py-2 group-hover:bg-amber-400 transition-colors shadow-md shadow-amber-500/30 shrink-0">
+                    <div className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#ff7a00] text-black font-extrabold text-xs px-3 py-2 hover:bg-[#ff8800] transition-colors shadow-md shadow-[#ff7a00]/30 shrink-0">
                       <Play className="w-4 h-4 fill-current mr-1" />
                       <span className="hidden sm:inline">RESUME</span>
                     </div>
@@ -262,24 +262,24 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                       onClick={() => handleCardClick(game)}
                       className={`relative p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col justify-between min-h-[120px] select-none ${
                         isPlayable
-                          ? `bg-[#131d32] ${game.borderTheme} cursor-pointer group shadow-lg hover:shadow-xl`
-                          : 'bg-[#101726]/60 border-white/5 opacity-60 cursor-pointer'
+                          ? `bg-[#141d33] border-[#26314d] hover:border-[#ff7a00]/50 cursor-pointer group shadow-lg hover:shadow-xl`
+                          : 'bg-[#141d33]/50 border-[#26314d]/50 opacity-55 cursor-pointer'
                       }`}
                     >
                       {/* Top Row: Icon + Status Tag */}
                       <div className="flex items-start justify-between gap-2">
                         <div
-                          className={`w-11 h-11 rounded-xl bg-gradient-to-br ${game.iconBg} border border-white/10 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner shrink-0`}
+                          className={`w-11 h-11 rounded-xl bg-gradient-to-br ${game.iconBg} border border-[#26314d] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner shrink-0`}
                         >
                           {game.icon}
                         </div>
 
                         {isPlayable ? (
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#1fd1a0]/15 text-[#1fd1a0] border border-[#1fd1a0]/30">
                             Playable
                           </span>
                         ) : (
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-gray-700/50 text-gray-400 border border-white/10 flex items-center gap-1">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-gray-700/50 text-gray-400 border border-[#26314d] flex items-center gap-1">
                             <Lock className="w-2.5 h-2.5" />
                             <span>Soon</span>
                           </span>
@@ -289,7 +289,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                       {/* Info Content */}
                       <div className="mt-3">
                         <div className="flex items-center justify-between gap-1">
-                          <h4 className="text-sm sm:text-base font-black font-display text-white group-hover:text-amber-300 transition-colors">
+                          <h4 className="text-sm sm:text-base font-black font-display text-white group-hover:text-[#ffb703] transition-colors">
                             {game.name}
                           </h4>
                           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
@@ -302,14 +302,14 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                       </div>
 
                       {/* Bottom Footer: Player count */}
-                      <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
+                      <div className="mt-2.5 pt-2 border-t border-[#26314d] flex items-center justify-between text-[11px] text-gray-400">
                         <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3 text-amber-400" />
+                          <Users className="w-3 h-3 text-[#ffb703]" />
                           <span>{game.playerCount}</span>
                         </span>
 
                         {isPlayable ? (
-                          <span className="text-amber-400 font-extrabold text-[11px] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                          <span className="text-[#ff7a00] font-extrabold text-[11px] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
                             <span>PLAY</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </span>
@@ -328,3 +328,5 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
     </AnimatePresence>
   );
 };
+
+export default GamePickerSheet;
