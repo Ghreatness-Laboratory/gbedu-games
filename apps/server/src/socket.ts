@@ -17,6 +17,7 @@ import {
   updateHouseRules,
   applyPresetRules,
   getRoomById,
+  startRoom,
 } from './rooms';
 import {
   startGameSession,
@@ -199,17 +200,34 @@ export function setupSocketIO(io: SocketIOServer<ClientToServerEvents, ServerToC
     // 9. Host Start Game
     socket.on('room:start', () => {
       if (!currentRoomId) return;
-      const res = startGameSession(currentRoomId, user.id, broadcastGameState, onGameCompleted);
-      if (res.success) {
-        io.to(currentRoomId).emit('game:started');
-        broadcastRoomUpdate(currentRoomId);
-        broadcastGameState(currentRoomId);
+      const room = getRoomById(currentRoomId);
+      if (!room) return;
+
+      if (room.game === 'whot') {
+        const res = startGameSession(currentRoomId, user.id, broadcastGameState, onGameCompleted);
+        if (res.success) {
+          io.to(currentRoomId).emit('game:started');
+          broadcastRoomUpdate(currentRoomId);
+          broadcastGameState(currentRoomId);
+        } else {
+          socket.emit('notification', {
+            type: 'error',
+            title: 'Cannot Start Game',
+            body: res.error || 'Failed to start game',
+          });
+        }
       } else {
-        socket.emit('notification', {
-          type: 'error',
-          title: 'Cannot Start Game',
-          body: res.error || 'Failed to start game',
-        });
+        const res = startRoom(currentRoomId, user.id);
+        if (res.success) {
+          io.to(currentRoomId).emit('game:started');
+          broadcastRoomUpdate(currentRoomId);
+        } else {
+          socket.emit('notification', {
+            type: 'error',
+            title: 'Cannot Start Game',
+            body: res.error || 'Failed to start game',
+          });
+        }
       }
     });
 

@@ -14,10 +14,22 @@ function generateRoomCode(): string {
   return code;
 }
 
-export function createRoom(hostId: string, initialRuleset?: Partial<Ruleset>, maxPlayers: number = 6): RoomDetails {
+export function createRoom(
+  hostId: string,
+  initialRuleset?: Partial<Ruleset>,
+  maxPlayers: number = 6,
+  game: string = 'whot',
+  settings?: Record<string, any>
+): RoomDetails {
   const hostProfile = getProfileById(hostId);
   if (!hostProfile) {
     throw new Error('Host user profile not found');
+  }
+
+  // Check if host already has an active waiting room; if so, close or clean it
+  const existingActive = getActiveRoomForUser(hostId);
+  if (existingActive && existingActive.status === 'waiting') {
+    leaveRoom(existingActive.id, hostId);
   }
 
   let code = generateRoomCode();
@@ -29,37 +41,72 @@ export function createRoom(hostId: string, initialRuleset?: Partial<Ruleset>, ma
   const ruleset = validated.ruleset;
   const preset = detectPreset(ruleset);
 
-  const safeMaxPlayers = Math.max(2, Math.min(6, maxPlayers));
+  const safeMaxPlayers = Math.max(2, Math.min(8, maxPlayers));
 
   const roomId = `room_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
+  // Generate clean public ID (e.g. #GB-4F7K)
+  const hostPublicId = hostProfile.publicId || generatePublicIdFromId(hostProfile.id);
+
   const hostPlayer: RoomPlayer = {
     userId: hostProfile.id,
+    publicId: hostPublicId,
     username: hostProfile.username,
     displayName: hostProfile.displayName,
     avatarUrl: hostProfile.avatarUrl,
+    avatarId: hostProfile.avatarId,
     seatIndex: 0,
     isHost: true,
     isReady: true,
     isConnected: true,
+    isVerified: true,
+    joinedAt: new Date().toISOString(),
   };
 
   const room: RoomDetails = {
     id: roomId,
     code,
+    game,
     hostId,
-    status: 'lobby',
+    status: 'waiting',
     ruleset,
+    settings: settings || {},
     preset,
     maxPlayers: safeMaxPlayers,
+    minPlayers: 2,
     players: [hostPlayer],
     createdAt: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
   };
 
   roomsById.set(roomId, room);
   roomsByCode.set(code, room);
 
   return room;
+}
+
+function generatePublicIdFromId(userId: string): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  }
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars[(hash + i * 13) % chars.length];
+  }
+  return `#GB-${code}`;
+}
+
+export function getActiveRoomForUser(userId: string): RoomDetails | null {
+  for (const room of roomsById.values()) {
+    if (room.status === 'waiting' || room.status === 'playing' || room.status === 'lobby' || room.status === 'in_progress') {
+      if (room.players.some((p) => p.userId === userId)) {
+        return room;
+      }
+    }
+  }
+  return null;
 }
 
 export function getRoomById(roomId: string): RoomDetails | null {
@@ -76,17 +123,42 @@ export function joinRoom(code: string, userId: string): { success: boolean; room
     return { success: false, error: 'Room not found with that code' };
   }
 
-  if (room.status !== 'lobby') {
+  // 15-minute inactivity expiration check for waiting rooms
+  if (room.lastActivity) {
+    const elapsedMs = Date.now() - new Date(room.lastActivity).getTime();
+    if (elapsedMs > 15 * 60 * 1000 && (room.status === 'waiting' || room.status === 'lobby')) {
+      room.status = 'abandoned';
+      return { success: false, error: 'This waiting room has expired due to inactivity' };
+    }
+  }
+
+  if (room.status === 'playing' || room.status === 'in_progress' || room.status === 'completed' || room.status === 'finished') {
+    // If user was already seated in this room, allow them to reconnect/re-seat!
+    const existing = room.players.find((p) => p.userId === userId);
+    if (existing) {
+      existing.isConnected = true;
+      existing.disconnectedAt = null;
+      room.lastActivity = new Date().toISOString();
+      return { success: true, room };
+    }
     return { success: false, error: 'Game is already in progress or completed' };
   }
 
   const existingPlayer = room.players.find((p) => p.userId === userId);
   if (existingPlayer) {
     existingPlayer.isConnected = true;
+    existingPlayer.disconnectedAt = null;
+    room.lastActivity = new Date().toISOString();
     return { success: true, room };
   }
 
-  // Hard cap of 6 (or room.maxPlayers) enforced strictly server-side
+  // Check if player is already in another waiting room; if so, cleanly leave that other room
+  const otherActive = getActiveRoomForUser(userId);
+  if (otherActive && otherActive.id !== room.id && otherActive.status === 'waiting') {
+    leaveRoom(otherActive.id, userId);
+  }
+
+  // Capacity check
   if (room.players.length >= room.maxPlayers) {
     return { success: false, error: `Room is full (max ${room.maxPlayers} players)` };
   }
@@ -103,26 +175,37 @@ export function joinRoom(code: string, userId: string): { success: boolean; room
     seatIndex++;
   }
 
+  const publicId = userProfile.publicId || generatePublicIdFromId(userProfile.id);
+
   const newPlayer: RoomPlayer = {
     userId: userProfile.id,
+    publicId,
     username: userProfile.username,
     displayName: userProfile.displayName,
     avatarUrl: userProfile.avatarUrl,
+    avatarId: userProfile.avatarId,
     seatIndex,
     isHost: false,
     isReady: false,
     isConnected: true,
+    isVerified: true,
+    joinedAt: new Date().toISOString(),
   };
 
   room.players.push(newPlayer);
+  room.lastActivity = new Date().toISOString();
   return { success: true, room };
 }
 
-export function leaveRoom(roomId: string, userId: string): { success: boolean; room?: RoomDetails; roomDeleted?: boolean } {
+export function leaveRoom(
+  roomId: string,
+  userId: string
+): { success: boolean; room?: RoomDetails; roomDeleted?: boolean; ownershipTransferred?: boolean; newOwner?: RoomPlayer } {
   const room = roomsById.get(roomId);
   if (!room) return { success: false };
 
   room.players = room.players.filter((p) => p.userId !== userId);
+  room.lastActivity = new Date().toISOString();
 
   // If no players remain, delete room
   if (room.players.length === 0) {
@@ -131,23 +214,47 @@ export function leaveRoom(roomId: string, userId: string): { success: boolean; r
     return { success: true, roomDeleted: true };
   }
 
-  // If host leaves in lobby, promote first player
-  if (room.hostId === userId && room.status === 'lobby') {
+  // If host leaves in waiting/lobby, transfer ownership to the next joined player
+  let ownershipTransferred = false;
+  let newOwner: RoomPlayer | undefined;
+  if (room.hostId === userId) {
     room.players[0].isHost = true;
     room.hostId = room.players[0].userId;
+    ownershipTransferred = true;
+    newOwner = room.players[0];
   }
 
-  return { success: true, room };
+  return { success: true, room, ownershipTransferred, newOwner };
 }
 
-export function setPlayerReady(roomId: string, userId: string, isReady: boolean): { success: boolean; room?: RoomDetails } {
+export function startRoom(
+  roomId: string,
+  callerId: string
+): { success: boolean; room?: RoomDetails; error?: string } {
   const room = roomsById.get(roomId);
-  if (!room || room.status !== 'lobby') return { success: false };
+  if (!room) return { success: false, error: 'Room not found' };
 
-  const player = room.players.find((p) => p.userId === userId);
-  if (!player) return { success: false };
+  // SERVER-SIDE OWNER VALIDATION: Only room owner can start!
+  if (room.hostId !== callerId) {
+    return { success: false, error: 'Only the room owner can start the match' };
+  }
 
-  player.isReady = isReady;
+  if (room.status !== 'waiting' && room.status !== 'lobby') {
+    return { success: false, error: 'Match has already started or finished' };
+  }
+
+  const minPlayers = room.minPlayers || 2;
+  if (room.players.length < minPlayers) {
+    return {
+      success: false,
+      error: `Need at least ${minPlayers} players to start (currently ${room.players.length})`,
+    };
+  }
+
+  // Advance status to playing and lock roster
+  room.status = 'playing';
+  room.lastActivity = new Date().toISOString();
+
   return { success: true, room };
 }
 
@@ -200,3 +307,19 @@ export function applyPresetRules(
   const targetRuleset = PRESETS[preset];
   return updateHouseRules(roomId, hostId, targetRuleset);
 }
+
+export function updateRoomSettings(
+  roomId: string,
+  hostId: string,
+  settings: Record<string, any>
+): { success: boolean; room?: RoomDetails; error?: string } {
+  const room = roomsById.get(roomId);
+  if (!room) return { success: false, error: 'Room not found' };
+  if (room.hostId !== hostId) return { success: false, error: 'Only the room owner can change settings' };
+  if (room.status !== 'waiting' && room.status !== 'lobby') return { success: false, error: 'Cannot change settings after match has started' };
+
+  room.settings = { ...(room.settings || {}), ...settings };
+  room.lastActivity = new Date().toISOString();
+  return { success: true, room };
+}
+

@@ -2,6 +2,7 @@ import { Card, Ruleset, PresetName, Shape, PlayerGameView } from './whot';
 
 export interface UserProfile {
   id: string;
+  publicId?: string;
   username: string;
   displayName: string;
   avatarUrl: string;
@@ -13,13 +14,18 @@ export interface UserProfile {
 
 export interface RoomPlayer {
   userId: string;
+  publicId?: string;
   username: string;
   displayName: string;
   avatarUrl: string;
+  avatarId?: string;
   seatIndex: number;
   isHost: boolean;
   isReady: boolean;
   isConnected: boolean;
+  isVerified?: boolean;
+  joinedAt?: string;
+  disconnectedAt?: number | null;
 }
 
 export interface RoomDetails {
@@ -27,12 +33,16 @@ export interface RoomDetails {
   code: string;
   game?: string;
   hostId: string;
-  status: 'lobby' | 'in_progress' | 'completed' | 'abandoned';
-  ruleset: Ruleset;
-  preset: PresetName;
+  status: 'waiting' | 'lobby' | 'playing' | 'in_progress' | 'completed' | 'finished' | 'abandoned';
+  ruleset?: Ruleset;
+  settings?: Record<string, any>;
+  preset?: PresetName | string;
   maxPlayers: number;
+  minPlayers?: number;
   players: RoomPlayer[];
   createdAt: string;
+  lastActivity?: string;
+  countdown?: number | null;
 }
 
 export interface ChatMessage {

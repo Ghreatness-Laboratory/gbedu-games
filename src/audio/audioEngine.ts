@@ -601,6 +601,22 @@ class SoundEngine {
   public playTile() {
     this.playTilePlace();
   }
+
+  // Countdown timer beat (3, 2, 1, GO!)
+  public playCountdown(count: number) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    if (count > 0) {
+      this.playAgogo(true);
+      this.playRimshot();
+    } else {
+      this.playKick();
+      this.playLogDrum(3);
+      this.playVocalAdlib('oshey');
+    }
+  }
 }
+
 
 export const soundEngine = new SoundEngine();
