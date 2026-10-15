@@ -362,7 +362,7 @@ export const ChessGame: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <GameResultModal
         isOpen={isModalOpen}
         winner={winner}
-        isWin={winner?.includes('White')}
+        isWin={Boolean(winner?.includes('White'))}
         scoreText={`King was captured!`}
         onPlayAgain={resetGame}
         onBackToLobby={onBack}

@@ -597,6 +597,10 @@ class SoundEngine {
     this.playSynthNote(587.33, 0.08, t); // D5
     this.playRimshot(t);
   }
+
+  public playTile() {
+    this.playTilePlace();
+  }
 }
 
 export const soundEngine = new SoundEngine();
