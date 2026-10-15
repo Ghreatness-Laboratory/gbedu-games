@@ -1,0 +1,161 @@
+import { QuizQuestion } from '../types';
+
+export const TRIVIA_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 'q1',
+    category: 'Finish Lyrics',
+    title: 'Complete the Burna Boy Anthem',
+    snippet: 'E don cast, last last, na everybody go ____',
+    missingLyric: 'chop breakfast',
+    options: ['chop breakfast', 'drink champagne', 'dance palance', 'pay their tax'],
+    correctAnswer: 'chop breakfast',
+    artist: 'Burna Boy',
+    trackName: 'Last Last',
+    year: '2022',
+    funFact: '"Chop breakfast" is Nigerian slang meaning to experience a painful heartbreak or romantic breakup.'
+  },
+  {
+    id: 'q2',
+    category: 'Finish Lyrics',
+    title: 'Wizkid & Tems Global Smash',
+    snippet: 'You, you, you, you no fit run away, baby you go dey for me, you say you go die for me... Say na only you fit ____',
+    missingLyric: 'hold my body',
+    options: ['hold my body', 'heal my sorrow', 'spend my money', 'fly with me'],
+    correctAnswer: 'hold my body',
+    artist: 'Wizkid ft. Tems',
+    trackName: 'Essence',
+    year: '2020',
+    funFact: '"Essence" was widely hailed as the "Song of the Summer" worldwide and earned a Grammy nomination for Best Global Music Performance.'
+  },
+  {
+    id: 'q3',
+    category: 'Finish Lyrics',
+    title: 'Asake & Olamide Street Anthem',
+    snippet: 'Omo Ope no dey look Uche face, because lonely at the top is ____',
+    missingLyric: 'a lonely journey',
+    options: ['a lonely journey', 'too expensive', 'sweet pass honey', 'only for legends'],
+    correctAnswer: 'a lonely journey',
+    artist: 'Asake',
+    trackName: 'Lonely At The Top',
+    year: '2023',
+    funFact: 'Asake pioneered the unique blend of Fuji vocal melodies and Amapiano log drums, dominating charts across Africa.'
+  },
+  {
+    id: 'q4',
+    category: 'Finish Lyrics',
+    title: 'Davido Party Favorite',
+    snippet: "Shekpe! I'm unavailable, dem no dey see me, say I no dey ____",
+    missingLyric: 'for you',
+    options: ['for you', 'in town', 'with them', 'online'],
+    correctAnswer: 'for you',
+    artist: 'Davido ft. Musa Keys',
+    trackName: 'Unavailable',
+    year: '2023',
+    funFact: '"Shekpe!" is Davido\'s signature hype ad-lib and chant, celebrating high spirits and premium enjoyment.'
+  },
+  {
+    id: 'q5',
+    category: 'Finish Lyrics',
+    title: 'Rema Global Phenomenon',
+    snippet: 'Baby calm down, calm down... Girl this your body e dey put my heart for ____',
+    missingLyric: 'lockdown',
+    options: ['lockdown', 'fire', 'trouble', 'danger'],
+    correctAnswer: 'lockdown',
+    artist: 'Rema',
+    trackName: 'Calm Down',
+    year: '2022',
+    funFact: 'Rema\'s "Calm Down" became the first African artist-led song to surpass 1 billion Spotify streams and 1 billion YouTube views!'
+  },
+  {
+    id: 'q6',
+    category: 'Street Slang',
+    title: 'Decode the Gbedu Slang',
+    snippet: 'When Burna Boy or Nigerian party crowds yell "No evidence, you go explain tire!", what does it mean?',
+    options: [
+      'Without solid proof, nobody will believe your story no matter how much you speak',
+      'The DJ did not bring sufficient sound cables',
+      'You must show your VIP wristband at the door',
+      'The police need your driver\'s license immediately'
+    ],
+    correctAnswer: 'Without solid proof, nobody will believe your story no matter how much you speak',
+    artist: 'Burna Boy',
+    trackName: 'City Boys / Live Speech',
+    year: '2023',
+    funFact: 'This catchphrase took social media and African pop culture by storm in 2023, turning into songs, memes, and merchandise.'
+  },
+  {
+    id: 'q7',
+    category: 'Afrobeats Trivia',
+    title: 'The Father of Afrobeat',
+    snippet: 'Which legendary multi-instrumentalist created Afrobeat in the late 1960s with his band Africa 70 and drummer Tony Allen at the Afrika Shrine?',
+    options: ['Fela Anikulapo Kuti', 'King Sunny Ade', 'Femi Kuti', 'Chief Stephen Osita Osadebe'],
+    correctAnswer: 'Fela Anikulapo Kuti',
+    artist: 'Fela Kuti',
+    trackName: 'Zombie / Water No Get Enemy',
+    year: '1970s',
+    funFact: 'Fela created Afrobeat by fusing traditional Yoruba polyrhythms, jazz improvisation, funk, and fierce socio-political commentary.'
+  },
+  {
+    id: 'q8',
+    category: 'Finish Lyrics',
+    title: 'Kizz Daniel Viral Anthem',
+    snippet: 'No do no do no do gragra for me... Odoyewu baby ____',
+    missingLyric: 'Buga won',
+    options: ['Buga won', 'dance palance', 'shake your body', 'flex your money'],
+    correctAnswer: 'Buga won',
+    artist: 'Kizz Daniel & Tekno',
+    trackName: 'Buga (Lo Lo Lo)',
+    year: '2022',
+    funFact: '"Buga" is a Yoruba expression meaning to flaunt one\'s success, wealth, and elegance with pride.'
+  },
+  {
+    id: 'q9',
+    category: 'Album Knowledge',
+    title: 'Historic Grammy Breakthrough',
+    snippet: 'Which critically-acclaimed album earned Burna Boy the Grammy Award for Best Global Music Album in 2021?',
+    options: ['Twice As Tall', 'African Giant', 'Love, Damini', 'Outside'],
+    correctAnswer: 'Twice As Tall',
+    artist: 'Burna Boy',
+    trackName: 'Album Award',
+    year: '2021',
+    funFact: 'Executive-produced by Diddy, Bose Ogulu (Mama Burna), and Burna Boy himself, "Twice As Tall" cemented modern Afrobeats on the world stage.'
+  },
+  {
+    id: 'q10',
+    category: 'Finish Lyrics',
+    title: 'Ayra Starr Sabi Girl Magic',
+    snippet: 'I no dey force myself to fit into your picture... \'Cause I am the ____',
+    missingLyric: 'Celestial being',
+    options: ['Celestial being', 'Sabi Girl', 'Fashion icon', 'Lagos superstar'],
+    correctAnswer: 'Celestial being',
+    artist: 'Ayra Starr',
+    trackName: 'Bloody Samaritan / Sabi Girl',
+    year: '2021',
+    funFact: 'Ayra Starr was signed to Mavin Records at age 18 and rapidly grew into one of the top female global streaming giants.'
+  },
+  {
+    id: 'q11',
+    category: 'Afrobeats Trivia',
+    title: 'The Instrument of Amapiano',
+    snippet: 'What iconic electronic percussion instrument defines the heavy, pitch-gliding drop in Amapiano and modern Afrobeats?',
+    options: ['808 Log Drum', 'Steel Pan', 'Electric Sitar', 'Marimba Stick'],
+    correctAnswer: '808 Log Drum',
+    artist: 'South African & Nigerian Producers',
+    trackName: 'Amapiano Movement',
+    year: '2019-Present',
+    funFact: 'The log drum sound originated from South African producers using digital synthesizers like Fruity DX10 with harsh pitch modulation!'
+  },
+  {
+    id: 'q12',
+    category: 'Finish Lyrics',
+    title: 'Omah Lay Soulful Groove',
+    snippet: 'My girl say she go die for me... But if I fall down, she go ____',
+    missingLyric: 'run for me',
+    options: ['run for me', 'cry for me', 'laugh at me', 'hold my hand'],
+    correctAnswer: 'run for me',
+    artist: 'Omah Lay',
+    trackName: 'soso / Bad Influence',
+    year: '2022',
+    funFact: 'Omah Lay popularized "Afro-Depression / Afro-Soul", combining introspective storytelling with danceable hypnotic rhythms.'
+  }
+];
