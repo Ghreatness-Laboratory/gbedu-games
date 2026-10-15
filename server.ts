@@ -39,6 +39,9 @@ async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
   const port = Number(process.env.PORT) || 3000;
 
+  // Serve static files from public directory
+  app.use(express.static(path.resolve(__dirname, 'public')));
+
   if (!isProduction) {
     // Mount Vite dev server middleware
     const { createServer: createViteServer } = await import('vite');
@@ -51,7 +54,8 @@ async function startServer() {
     // Serve static files in production
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    // SPA fallback in Express 5
+    app.use((_req, res) => {
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   }
