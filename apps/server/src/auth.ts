@@ -99,9 +99,22 @@ export function registerOrLoginUser(params: { username: string; displayName?: st
     userStats.set(newId, { gamesPlayed: 0, gamesWon: 0, totalCards: 0, streak: 0 });
   } else {
     // Existing login: update status
-    profile.isOnline = true;
-    if (params.avatarUrl) profile.avatarUrl = params.avatarUrl;
     if (params.displayName) profile.displayName = params.displayName;
+  }
+
+  // Asynchronously attempt to sync profile to Supabase if table exists
+  if (supabase) {
+    Promise.resolve(
+      supabase.from('profiles').upsert({
+        id: profile.id,
+        username: profile.username,
+        display_name: profile.displayName,
+        avatar_url: profile.avatarUrl,
+        bio: profile.bio,
+        is_online: true,
+        updated_at: new Date().toISOString(),
+      })
+    ).catch(() => {});
   }
 
   return {

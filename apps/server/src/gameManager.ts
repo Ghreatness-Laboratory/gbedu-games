@@ -9,7 +9,7 @@ import {
 } from '@gbedu/whot-engine';
 import { PlayerGameView, Shape } from '@gbedu/shared';
 import { getRoomById } from './rooms';
-import { recordGameResult } from './auth';
+import { recordGameResult, supabase } from './auth';
 
 interface ActiveSession {
   roomId: string;
@@ -79,6 +79,16 @@ function saveSnapshot(roomId: string, state: EngineState) {
     engineState: JSON.parse(JSON.stringify(state)),
     updatedAt: Date.now(),
   });
+
+  if (supabase) {
+    Promise.resolve(
+      supabase.from('game_snapshots').upsert({
+        room_id: roomId,
+        engine_state: state,
+        updated_at: new Date().toISOString(),
+      })
+    ).catch(() => {});
+  }
 }
 
 export function executePlayerMove(
@@ -251,6 +261,20 @@ function handleGameOver(
   // Update statistics
   const playerIds = session.engineState.players.map((p) => p.userId);
   recordGameResult(winnerId, playerIds, session.engineState.turnStep);
+
+  // Persist final result to Supabase game_history table if available
+  if (supabase) {
+    Promise.resolve(
+      supabase.from('game_history').insert({
+        room_id: session.roomId,
+        ruleset: session.engineState.ruleset,
+        winner_id: winnerId || null,
+        total_turns: session.engineState.turnStep,
+        duration_seconds: Math.floor((Date.now() - session.engineState.startedAt) / 1000),
+        final_standings: standings,
+      })
+    ).catch(() => {});
+  }
 
   onGameCompletedCallback(session.roomId, winnerId, standings);
 }

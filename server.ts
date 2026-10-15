@@ -7,6 +7,12 @@ import { setupSocketIO } from './apps/server/src/socket';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+try {
+  process.loadEnvFile();
+} catch {
+  // .env may not exist in some environments
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
