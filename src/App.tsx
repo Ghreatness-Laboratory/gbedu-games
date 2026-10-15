@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from 'react-router-dom';
 import { useWhotStore } from './store/useWhotStore';
 import { AuthScreen } from './components/AuthScreen';
 import { DashboardScreen } from './components/DashboardScreen';
-import { LobbyScreen } from './components/LobbyScreen';
-import { GameBoard } from './components/GameBoard';
+import { GameLobbyScreen } from './components/GameLobbyScreen';
 import { BeatMaker } from './components/BeatMaker';
 import { LyricsQuiz } from './components/LyricsQuiz';
 import { GuessMelody } from './components/GuessMelody';
@@ -22,16 +29,21 @@ import {
   VolumeX,
   LogOut,
   Sparkles,
-  Layers,
+  Gamepad2,
   X,
 } from 'lucide-react';
 
-type SubTab = 'whot' | 'beatmaker' | 'lyrics' | 'guess' | 'party';
+// Lazy-load GamePickerSheet for fast first paint
+const GamePickerSheet = lazy(() =>
+  import('./components/GamePickerSheet').then((m) => ({ default: m.GamePickerSheet }))
+);
+
+type SubTab = 'games' | 'beatmaker' | 'lyrics' | 'guess' | 'party';
 
 export const App: React.FC = () => {
   const {
     user,
-    token,
+    stats,
     initAuth,
     currentRoom,
     gameView,
@@ -42,24 +54,70 @@ export const App: React.FC = () => {
     clearNotification,
   } = useWhotStore();
 
-  const [activeTab, setActiveTab] = useState<SubTab>('whot');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<SubTab>('games');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Sync picker state from URL query param (?picker=open)
+  const isPickerOpen = searchParams.get('picker') === 'open';
 
   // Initialize Supabase auth session listener
   useEffect(() => {
     initAuth();
   }, [initAuth]);
 
+  // Idle prefetch of GamePickerSheet for instantaneous opening
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const prefetch = () => {
+        import('./components/GamePickerSheet');
+      };
+      if ('requestIdleCallback' in window) {
+        (window as unknown as { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(prefetch);
+      } else {
+        setTimeout(prefetch, 1200);
+      }
+    }
+  }, []);
+
+  const handleOpenPicker = () => {
+    soundEngine.playClick();
+    // Use push navigation so back button on mobile closes picker first
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('picker', 'open');
+    navigate({ search: newParams.toString() });
+  };
+
+  const handleClosePicker = () => {
+    soundEngine.playClick();
+    if (isPickerOpen) {
+      // Step back in history so phone back button mirrors this
+      navigate(-1);
+    }
+  };
+
+  const handleSelectGame = (gameId: string) => {
+    soundEngine.playAgogo(true);
+    // Navigate to game lobby without the ?picker=open query
+    navigate(`/game/${gameId}`);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-[#0b1426] text-white flex flex-col justify-between">
         <AuthScreen />
         <footer className="py-4 text-center text-xs text-gray-500 border-t border-white/5">
-          Gbedu Games • Real Multiplayer Naija Whot • FragNaija by Ghreatness Laboratory
+          Gbedu Games • Real Multiplayer Naija Party Games • FragNaija by Ghreatness Laboratory
         </footer>
       </div>
     );
   }
+
+  // Determine if we are on a game route
+  const isGameRoute = location.pathname.startsWith('/game/');
 
   return (
     <div className="min-h-screen bg-[#0b1426] text-white flex flex-col selection:bg-amber-500 selection:text-black">
@@ -68,12 +126,15 @@ export const App: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Official Logo & Tagline */}
           <div
-            onClick={() => setActiveTab('whot')}
+            onClick={() => {
+              setActiveTab('games');
+              navigate('/home');
+            }}
             className="flex items-center gap-2 cursor-pointer group"
           >
             <GbeduLogo size="md" />
-            <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              NAIJA WHOT
+            <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              GAMES HUB
             </span>
           </div>
 
@@ -81,7 +142,7 @@ export const App: React.FC = () => {
           {!gameView && !currentRoom && (
             <nav className="hidden md:flex items-center gap-1.5">
               {[
-                { id: 'whot', label: 'Whot Multiplayer', icon: <Layers className="w-4 h-4 text-amber-400" /> },
+                { id: 'games', label: 'Games Hub', icon: <Gamepad2 className="w-4 h-4 text-amber-400" />, path: '/home' },
                 { id: 'beatmaker', label: 'Beat Maker', icon: <Disc3 className="w-4 h-4 text-rose-400" /> },
                 { id: 'lyrics', label: 'Lyrics Quiz', icon: <Mic2 className="w-4 h-4 text-emerald-400" /> },
                 { id: 'guess', label: 'Whot & Tune', icon: <Music className="w-4 h-4 text-cyan-400" /> },
@@ -89,9 +150,14 @@ export const App: React.FC = () => {
               ].map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => setActiveTab(t.id as SubTab)}
+                  onClick={() => {
+                    setActiveTab(t.id as SubTab);
+                    if (t.path) {
+                      navigate(t.path);
+                    }
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === t.id
+                    activeTab === t.id && (!isGameRoute || t.id !== 'games')
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
                       : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
                   }`}
@@ -107,15 +173,16 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <button
               onClick={toggleMute}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-colors cursor-pointer"
+              className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-colors flex items-center justify-center cursor-pointer"
               title={isMuted ? 'Unmute' : 'Mute'}
+              aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
             >
               {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
             </button>
 
             <button
               onClick={() => setIsProfileOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer group"
+              className="min-h-[40px] flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer group"
               title="Edit Player Avatar & Profile"
             >
               <Avatar
@@ -134,8 +201,9 @@ export const App: React.FC = () => {
 
             <button
               onClick={logout}
-              className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-300 transition-colors cursor-pointer"
+              className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-white/5 hover:bg-rose-500/20 text-gray-400 hover:text-rose-300 transition-colors flex items-center justify-center cursor-pointer"
               title="Log Out"
+              aria-label="Log out"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -159,23 +227,34 @@ export const App: React.FC = () => {
 
       {/* Main Content Arena */}
       <main className={`flex-1 flex flex-col justify-center ${!gameView && !currentRoom ? 'pb-16 md:pb-0' : ''}`}>
-        {gameView ? (
-          /* Live Game Active */
-          <GameBoard />
-        ) : currentRoom ? (
-          /* Room Lobby Active */
-          <LobbyScreen />
-        ) : activeTab === 'whot' ? (
-          /* Main Dashboard */
-          <DashboardScreen />
-        ) : activeTab === 'beatmaker' ? (
-          <BeatMaker />
-        ) : activeTab === 'lyrics' ? (
-          <LyricsQuiz onScoreUpdate={() => {}} />
-        ) : activeTab === 'guess' ? (
-          <GuessMelody onScoreUpdate={() => {}} />
+        {activeTab !== 'games' ? (
+          activeTab === 'beatmaker' ? (
+            <BeatMaker />
+          ) : activeTab === 'lyrics' ? (
+            <LyricsQuiz onScoreUpdate={() => {}} />
+          ) : activeTab === 'guess' ? (
+            <GuessMelody onScoreUpdate={() => {}} />
+          ) : (
+            <PartyLeaderboard player={{ name: user.displayName, avatar: user.avatarUrl, title: 'Odogwu', totalScore: 2500, rhythmHighScore: 3000, lyricsStreak: 5, unlockedBadges: ['b1', 'b4'] }} />
+          )
         ) : (
-          <PartyLeaderboard player={{ name: user.displayName, avatar: user.avatarUrl, title: 'Odogwu', totalScore: 2500, rhythmHighScore: 3000, lyricsStreak: 5, unlockedBadges: ['b1', 'b4'] }} />
+          <Routes>
+            <Route
+              path="/home"
+              element={
+                <DashboardScreen
+                  onOpenPicker={handleOpenPicker}
+                  onQuickPlay={(gameId) => navigate(`/game/${gameId}`)}
+                  isPickerOpen={isPickerOpen}
+                />
+              }
+            />
+            <Route
+              path="/game/:gameId"
+              element={<GameLobbyScreen onOpenPicker={handleOpenPicker} />}
+            />
+            <Route path="*" element={<Navigate to="/home" replace />} />
+          </Routes>
         )}
       </main>
 
@@ -183,7 +262,7 @@ export const App: React.FC = () => {
       {!gameView && !currentRoom && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d1527]/95 backdrop-blur-md border-t border-white/10 px-2 py-2 flex items-center justify-around shadow-2xl">
           {[
-            { id: 'whot', label: 'Whot', icon: <Layers className="w-5 h-5 text-amber-400" /> },
+            { id: 'games', label: 'Games', icon: <Gamepad2 className="w-5 h-5 text-amber-400" />, path: '/home' },
             { id: 'beatmaker', label: 'Beats', icon: <Disc3 className="w-5 h-5 text-rose-400" /> },
             { id: 'lyrics', label: 'Lyrics', icon: <Mic2 className="w-5 h-5 text-emerald-400" /> },
             { id: 'guess', label: 'Melody', icon: <Music className="w-5 h-5 text-cyan-400" /> },
@@ -191,9 +270,14 @@ export const App: React.FC = () => {
           ].map((t) => (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id as SubTab)}
+              onClick={() => {
+                setActiveTab(t.id as SubTab);
+                if (t.path) {
+                  navigate(t.path);
+                }
+              }}
               className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-[10px] font-bold transition-all cursor-pointer ${
-                activeTab === t.id
+                activeTab === t.id && (!isGameRoute || t.id !== 'games')
                   ? 'text-amber-300 bg-amber-500/15 border border-amber-500/30'
                   : 'text-gray-400 hover:text-white'
               }`}
@@ -212,30 +296,40 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-2 justify-center">
               <span className="text-amber-400 font-extrabold">GBEDU GAMES</span>
               <span>•</span>
-              <span>Multiplayer Naija Whot Platform (2-6 Players)</span>
+              <span>African Music & Party Games Hub</span>
             </div>
             <div className="text-gray-400 text-[11px]">
-              Single Authority Game Server • Pure TS Whot Engine • Realtime Sockets
+              Single Authority Game Engine • Pure TypeScript • 10+ Party & Board Games
             </div>
           </div>
         </footer>
       )}
+
+      {/* Lazy-Loaded GamePickerSheet */}
+      <Suspense fallback={null}>
+        <GamePickerSheet
+          isOpen={isPickerOpen}
+          onClose={handleClosePicker}
+          onSelectGame={handleSelectGame}
+        />
+      </Suspense>
+
       {/* Profile & Avatar Customizer Modal */}
-      {isProfileOpen && (
+      {isProfileOpen && user && (
         <ProfileModal
           isOpen={isProfileOpen}
-          onClose={() => setIsProfileOpen(false)}
           player={{
             name: user.displayName || user.username,
+            title: user.bio || 'Odogwu Contender',
             avatar: user.avatarUrl,
             avatarId: user.avatarId,
             avatarConfig: user.avatarConfig,
-            title: 'Odogwu',
-            totalScore: 2500,
+            totalScore: (stats.gamesWon || 0) * 500 + 1000,
             rhythmHighScore: 3000,
-            lyricsStreak: 5,
+            lyricsStreak: stats.streak || 1,
             unlockedBadges: ['b1', 'b4'],
           }}
+          onClose={() => setIsProfileOpen(false)}
         />
       )}
     </div>
