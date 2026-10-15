@@ -30,7 +30,7 @@ export const App: React.FC = () => {
   const {
     user,
     token,
-    initSocket,
+    initAuth,
     currentRoom,
     gameView,
     logout,
@@ -42,12 +42,10 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<SubTab>('whot');
 
-  // Initialize socket when user & token are present
+  // Initialize Supabase auth session listener
   useEffect(() => {
-    if (user && token) {
-      initSocket();
-    }
-  }, [user, token, initSocket]);
+    initAuth();
+  }, [initAuth]);
 
   if (!user) {
     return (

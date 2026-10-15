@@ -11,6 +11,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface FriendsModalProps {
   isOpen: boolean;
@@ -40,23 +41,74 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ isOpen, onClose }) =
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const fetchFriendsAndRequests = async () => {
-    if (!token) return;
-    try {
-      const [friendsRes, requestsRes] = await Promise.all([
-        fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/friends/requests', { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
+    if (!user) return;
+    if (isSupabaseConfigured) {
+      try {
+        const { data: fData } = await supabase
+          .from('friendships')
+          .select('user_id_1, user_id_2, profile1:user_id_1(id, username, display_name, avatar_url, bio, is_online), profile2:user_id_2(id, username, display_name, avatar_url, bio, is_online)')
+          .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
 
-      if (friendsRes.ok) {
-        const d = await friendsRes.json();
-        setFriends(d.friends || []);
+        if (fData) {
+          const loadedFriends: UserProfile[] = fData.map((f: any) => {
+            const isUser1 = f.user_id_1 === user.id;
+            const p = isUser1 ? f.profile2 : f.profile1;
+            return {
+              id: p?.id || (isUser1 ? f.user_id_2 : f.user_id_1),
+              username: p?.username || 'player',
+              displayName: p?.display_name || p?.username || 'Player',
+              avatarUrl: p?.avatar_url || '👑',
+              bio: p?.bio,
+              isOnline: p?.is_online || false,
+            };
+          });
+          setFriends(loadedFriends);
+        }
+
+        const { data: reqData } = await supabase
+          .from('friend_requests')
+          .select('id, sender_id, receiver_id, status, created_at, sender:sender_id(id, username, display_name, avatar_url), receiver:receiver_id(id, username, display_name, avatar_url)')
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .eq('status', 'pending');
+
+        if (reqData) {
+          const incoming = reqData
+            .filter((r: any) => r.receiver_id === user.id)
+            .map((r: any) => ({
+              id: r.id,
+              senderId: r.sender_id,
+              receiverId: r.receiver_id,
+              status: r.status,
+              sender: {
+                id: r.sender?.id || r.sender_id,
+                username: r.sender?.username || 'player',
+                displayName: r.sender?.display_name || 'Player',
+                avatarUrl: r.sender?.avatar_url || '👑',
+              },
+              receiver: user,
+            }));
+
+          const outgoing = reqData
+            .filter((r: any) => r.sender_id === user.id)
+            .map((r: any) => ({
+              id: r.id,
+              senderId: r.sender_id,
+              receiverId: r.receiver_id,
+              status: r.status,
+              sender: user,
+              receiver: {
+                id: r.receiver?.id || r.receiver_id,
+                username: r.receiver?.username || 'player',
+                displayName: r.receiver?.display_name || 'Player',
+                avatarUrl: r.receiver?.avatar_url || '👑',
+              },
+            }));
+
+          setRequests({ incoming, outgoing });
+        }
+      } catch {
+        // Fallback or ignore
       }
-      if (requestsRes.ok) {
-        const d = await requestsRes.json();
-        setRequests(d);
-      }
-    } catch {
-      // Ignore
     }
   };
 
@@ -68,85 +120,119 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ isOpen, onClose }) =
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim() || !token) return;
+    if (!searchQuery.trim() || !user) return;
 
-    try {
-      const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery.trim())}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setSearchResults(d.results || []);
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, bio, is_online')
+          .ilike('username', `%${searchQuery.trim()}%`)
+          .neq('id', user.id)
+          .limit(10);
+
+        if (!error && data) {
+          setSearchResults(
+            data.map((p: any) => ({
+              id: p.id,
+              username: p.username,
+              displayName: p.display_name,
+              avatarUrl: p.avatar_url || '👑',
+              bio: p.bio,
+              isOnline: p.is_online || false,
+            }))
+          );
+        } else if (error) {
+          setActionNotice(error.message);
+        }
+      } catch (err) {
+        setActionNotice((err as Error).message);
       }
-    } catch {
-      // Ignore
+    } else {
+      setActionNotice('Supabase not configured in Vercel env yet');
     }
   };
 
   const handleSendRequest = async (targetUserId: string) => {
-    if (!token) return;
-    try {
-      const res = await fetch('/api/friends/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ targetUserId }),
-      });
+    if (!user) return;
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('friend_requests').insert({
+          sender_id: user.id,
+          receiver_id: targetUserId,
+          status: 'pending',
+        });
 
-      const d = await res.json();
-      if (res.ok) {
-        setActionNotice('Friend request sent!');
-        fetchFriendsAndRequests();
-      } else {
-        setActionNotice(d.error || 'Failed to send request');
+        if (!error) {
+          setActionNotice('Friend request sent via Supabase!');
+          fetchFriendsAndRequests();
+        } else {
+          setActionNotice(error.message);
+        }
+        setTimeout(() => setActionNotice(null), 3500);
+      } catch (err) {
+        setActionNotice((err as Error).message);
       }
-      setTimeout(() => setActionNotice(null), 3000);
-    } catch {
-      setActionNotice('Network error');
+    } else {
+      setActionNotice('Friend request sent (demo mode)');
+      setTimeout(() => setActionNotice(null), 2500);
     }
   };
 
   const handleRespondRequest = async (requestId: string, accept: boolean) => {
-    if (!token) return;
-    try {
-      const res = await fetch('/api/friends/respond', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ requestId, accept }),
-      });
+    if (!user) return;
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase
+          .from('friend_requests')
+          .update({ status: accept ? 'accepted' : 'declined' })
+          .eq('id', requestId);
 
-      if (res.ok) {
-        setActionNotice(accept ? 'Friend request accepted!' : 'Friend request declined');
-        fetchFriendsAndRequests();
+        if (!error) {
+          const req = requests.incoming.find((r) => r.id === requestId);
+          if (accept && req) {
+            const u1 = user.id < req.senderId ? user.id : req.senderId;
+            const u2 = user.id < req.senderId ? req.senderId : user.id;
+            await supabase.from('friendships').insert({
+              user_id_1: u1,
+              user_id_2: u2,
+            });
+          }
+          setActionNotice(accept ? 'Friend request accepted!' : 'Friend request declined');
+          fetchFriendsAndRequests();
+        } else {
+          setActionNotice(error.message);
+        }
+        setTimeout(() => setActionNotice(null), 3000);
+      } catch (err) {
+        setActionNotice((err as Error).message);
       }
-      setTimeout(() => setActionNotice(null), 3000);
-    } catch {
-      // Ignore
     }
   };
 
   const handleInviteToRoom = async (friendId: string) => {
-    if (!token || !currentRoom) return;
-    try {
-      const res = await fetch('/api/rooms/invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ roomId: currentRoom.id, receiverId: friendId }),
-      });
-      if (res.ok) {
-        setActionNotice('Game invitation sent to friend!');
+    if (!user || !currentRoom) return;
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('game_invitations').insert({
+          room_id: currentRoom.id,
+          sender_id: user.id,
+          receiver_id: friendId,
+          status: 'pending',
+          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        });
+        if (!error) {
+          setActionNotice('Game invitation sent to friend!');
+        } else {
+          setActionNotice(error.message);
+        }
+        setTimeout(() => setActionNotice(null), 3000);
+      } catch (err) {
+        setActionNotice((err as Error).message);
       }
-      setTimeout(() => setActionNotice(null), 3000);
-    } catch {
-      // Ignore
+    } else {
+      setActionNotice('Invitation sent!');
+      setTimeout(() => setActionNotice(null), 2500);
     }
   };
 

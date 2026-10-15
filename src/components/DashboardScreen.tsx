@@ -15,6 +15,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface GameInvite {
   id: string;
@@ -24,7 +25,7 @@ interface GameInvite {
 }
 
 export const DashboardScreen: React.FC = () => {
-  const { user, token, stats, createRoom, joinRoom, roomError, setUser } = useWhotStore();
+  const { user, token, stats, createRoom, joinRoom, roomError, setUser, loginDemo } = useWhotStore();
 
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
@@ -42,17 +43,27 @@ export const DashboardScreen: React.FC = () => {
   ];
 
   const fetchInvites = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch('/api/rooms/invites', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setInvites(d.invites || []);
+    if (!user) return;
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('game_invitations')
+          .select('id, room_id, sender_id, receiver_id, status, expires_at, sender:sender_id(username), room:game_rooms(code)')
+          .eq('receiver_id', user.id)
+          .eq('status', 'pending');
+
+        if (!error && data) {
+          const formatted: GameInvite[] = data.map((inv: any) => ({
+            id: inv.id,
+            roomId: inv.room_id,
+            roomCode: inv.room?.code || 'WHOT',
+            senderName: inv.sender?.username || 'Friend',
+          }));
+          setInvites(formatted);
+        }
+      } catch {
+        // Ignore
       }
-    } catch {
-      // Ignore
     }
   };
 
@@ -60,7 +71,7 @@ export const DashboardScreen: React.FC = () => {
     fetchInvites();
     const interval = setInterval(fetchInvites, 5000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [user]);
 
   const handleCreateRoom = async () => {
     setIsCreating(true);
@@ -81,19 +92,8 @@ export const DashboardScreen: React.FC = () => {
 
   const handleSwitchAccount = async (username: string) => {
     soundEngine.playShekere();
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.profile, data.token);
-      }
-    } catch {
-      // Ignore
-    }
+    const target = DEMO_ACCOUNTS.find((d) => d.username === username);
+    await loginDemo(username, target?.name, target?.avatar);
   };
 
   if (!user) return null;
