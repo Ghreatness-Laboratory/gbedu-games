@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Radio,
   ArrowRight,
+  ShoppingCart,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -216,6 +217,11 @@ export const GameBoard: React.FC = () => {
                   <span className="text-xs font-extrabold text-white max-w-[80px] sm:max-w-[100px] truncate">
                     {opp.username}
                   </span>
+                  {isActive && (gameView.generalMarketActive || gameView.isPlayAgainTurn) && (
+                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-orange-500 text-white animate-pulse">
+                      2x AGAIN
+                    </span>
+                  )}
                   {opp.hasCalledLastCard && (
                     <span className="text-[9px] font-black px-1 rounded bg-rose-500 text-white animate-pulse">
                       LAST!
@@ -235,8 +241,16 @@ export const GameBoard: React.FC = () => {
 
       {/* 3. Felt Table with Discard Pile, Draw Pile & Active Shape */}
       <div className="relative flex-1 my-2 rounded-3xl bg-radial from-[#12633e] via-[#0f5132] to-[#093520] border-4 border-amber-500/30 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] flex flex-col items-center justify-center p-4 overflow-hidden">
+        {/* General Market Banner */}
+        {(gameView.generalMarketActive || gameView.lastActionMessage?.includes('General Market')) && (
+          <div className="absolute top-3 px-4 py-2 rounded-2xl bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 text-white font-black text-xs sm:text-sm tracking-wider uppercase animate-bounce shadow-xl shadow-orange-500/50 z-30 flex items-center gap-2 border-2 border-amber-300">
+            <ShoppingCart className="w-4 h-4 text-amber-200 animate-pulse" />
+            <span>General Market! Everyone picks 1. Play again.</span>
+          </div>
+        )}
+
         {/* Special Action Banner */}
-        {gameView.pendingPickCount > 0 && (
+        {gameView.pendingPickCount > 0 && !(gameView.generalMarketActive || gameView.lastActionMessage?.includes('General Market')) && (
           <div className="absolute top-3 px-4 py-1.5 rounded-xl bg-rose-600 text-white font-black text-xs sm:text-sm tracking-wider uppercase animate-bounce shadow-xl shadow-rose-600/40 z-20 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
             <span>
@@ -312,12 +326,37 @@ export const GameBoard: React.FC = () => {
         <div className="w-full text-center z-10 mt-auto pt-2">
           <p className="text-xs sm:text-sm font-extrabold text-white drop-shadow">
             {isMyTurn ? (
-              <span className="text-amber-400 font-display">
-                👉 YOUR TURN: Play a {activeShape.toUpperCase()} or {topDiscard?.number}
-              </span>
+              gameView.generalMarketActive ? (
+                <span className="text-amber-300 font-display animate-pulse flex items-center justify-center gap-1.5">
+                  <ShoppingCart className="w-4 h-4 text-amber-400" />
+                  <span>GENERAL MARKET: Play again! Match {activeShape.toUpperCase()} or 14, or draw 1 card.</span>
+                </span>
+              ) : gameView.isPlayAgainTurn ? (
+                <span className="text-amber-300 font-display animate-pulse">
+                  👉 PLAY AGAIN: Play another card matching {activeShape.toUpperCase()} or {topDiscard?.number}, or draw 1 card.
+                </span>
+              ) : myHand.length === 1 && !gameView.ruleset.goOutOnSpecial && [1, 2, 5, 8, 14, 20].includes(myHand[0]?.number) ? (
+                <span className="text-rose-400 font-display animate-pulse">
+                  ⚠️ CANNOT FINISH ON SPECIAL CARD ({myHand[0]?.number}): Draw 1 card from market!
+                </span>
+              ) : (
+                <span className="text-amber-400 font-display">
+                  👉 YOUR TURN: Play a {activeShape.toUpperCase()} or {topDiscard?.number}
+                </span>
+              )
             ) : (
               <span className="text-gray-300">
-                Waiting for {gameView.opponents.find((o) => o.userId === gameView.activeUserId)?.username || 'opponent'}...
+                {gameView.generalMarketActive ? (
+                  <span className="text-orange-300 font-bold">
+                    🛒 General Market! {gameView.opponents.find((o) => o.userId === gameView.activeUserId)?.username || 'Opponent'} plays again...
+                  </span>
+                ) : gameView.isPlayAgainTurn ? (
+                  <span className="text-amber-300 font-bold">
+                    🔁 {gameView.opponents.find((o) => o.userId === gameView.activeUserId)?.username || 'Opponent'} plays again...
+                  </span>
+                ) : (
+                  <span>Waiting for {gameView.opponents.find((o) => o.userId === gameView.activeUserId)?.username || 'opponent'}...</span>
+                )}
               </span>
             )}
           </p>
@@ -368,7 +407,7 @@ export const GameBoard: React.FC = () => {
               onClick={() => attemptPlayCard(selectedCardId)}
               className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-amber-500 text-black font-black text-xs sm:text-sm hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/30 cursor-pointer"
             >
-              <span>PLAY CARD</span>
+              <span>{gameView.generalMarketActive || gameView.isPlayAgainTurn ? 'PLAY AGAIN' : 'PLAY CARD'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           )}
@@ -376,9 +415,19 @@ export const GameBoard: React.FC = () => {
           {isMyTurn && gameView.canDraw && (
             <button
               onClick={drawCard}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/20 transition-colors cursor-pointer"
+              className={`px-4 py-2 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                gameView.generalMarketActive
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/50 ring-2 ring-amber-400/40 animate-pulse'
+                  : myHand.length === 1 && !gameView.ruleset.goOutOnSpecial && [1, 2, 5, 8, 14, 20].includes(myHand[0]?.number)
+                  ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/50 ring-2 ring-rose-400/40 animate-pulse'
+                  : 'bg-white/10 hover:bg-white/15 text-white border-white/20'
+              }`}
             >
-              Draw Card
+              {gameView.generalMarketActive
+                ? 'No Playable Card: Draw 1 & Pass'
+                : myHand.length === 1 && !gameView.ruleset.goOutOnSpecial && [1, 2, 5, 8, 14, 20].includes(myHand[0]?.number)
+                ? 'Draw 1 from Market (Special finish not allowed)'
+                : 'Draw Card'}
             </button>
           )}
         </div>

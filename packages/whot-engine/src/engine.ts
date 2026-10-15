@@ -126,14 +126,10 @@ export function legalCardIds(state: EngineState, playerIndex: number): string[] 
 
   return player.hand
     .filter((card) => {
-      // If goOutOnSpecial is false, player cannot win on a special card
+      // If goOutOnSpecial is false ("Allow finishing on special cards" off),
+      // player cannot win on a special card (1, 2, 5, 8, 14, 20) and must draw 1 card instead
       if (isLastCard && !state.ruleset.goOutOnSpecial) {
-        if (card.number === 1 && state.ruleset.specials.holdOn) return false;
-        if (card.number === 2 && state.ruleset.specials.pickTwo) return false;
-        if (card.number === 5 && state.ruleset.specials.pickThree) return false;
-        if (card.number === 8 && state.ruleset.specials.suspension) return false;
-        if (card.number === 14 && state.ruleset.specials.generalMarket) return false;
-        if (card.number === 20 && state.ruleset.specials.whot) return false;
+        if ([1, 2, 5, 8, 14, 20].includes(card.number)) return false;
       }
 
       // Whot 20 is wild and always playable (unless restricted by goOutOnSpecial above)
@@ -159,14 +155,14 @@ export function canDraw(state: EngineState, playerIndex: number): boolean {
   return legals.length === 0;
 }
 
-// Reshuffles discard pile into draw pile if draw pile is exhausted
-function ensureDrawPileCards(state: EngineState, countNeeded: number, rng: () => number = Math.random): void {
+// Reshuffles discard pile (except top card) into draw pile if draw pile is exhausted
+export function ensureDrawPileCards(state: EngineState, countNeeded: number, rng: () => number = Math.random): void {
   if (state.drawPile.length >= countNeeded) return;
 
-  // Keep top card on discard pile, take the rest for reshuffle
+  // Keep top card on discard pile, take all other cards for reshuffle
   if (state.discardPile.length > 1) {
-    const top = state.discardPile.pop()!;
-    const cardsToShuffle = state.discardPile;
+    const top = state.discardPile[state.discardPile.length - 1];
+    const cardsToShuffle = state.discardPile.slice(0, state.discardPile.length - 1);
     state.discardPile = [top];
     state.drawPile.push(...shuffleDeck(cardsToShuffle, rng));
   }
@@ -272,21 +268,39 @@ export function playCard(
 
   // 2. Win Check (only if hand is completely empty and no check-up penalty)
   if (activePlayer.hand.length === 0) {
-    state.gameStatus = 'completed';
-    state.winnerUserId = activePlayer.userId;
-    state.endedAt = Date.now();
-    state.lastActionMessage = `CHECK UP! ${playerName} has won the Whot game! 🏆`;
-    events.push({
-      type: 'game_win',
-      message: state.lastActionMessage,
-      userId: activePlayer.userId,
-    });
-    return { success: true, state, events };
+    // If goOutOnSpecial is false ("Allow finishing on special cards" off),
+    // a player whose last card is a special (1, 2, 5, 8, 14, 20) must draw 1 card instead of winning
+    if (!state.ruleset.goOutOnSpecial && [1, 2, 5, 8, 14, 20].includes(card.number)) {
+      ensureDrawPileCards(state, 1, rng);
+      if (state.drawPile.length > 0) {
+        activePlayer.hand.push(state.drawPile.shift()!);
+      }
+      events.push({
+        type: 'penalty_special_finish',
+        message: `${playerName} cannot finish on special card (${card.number})! Drew 1 card instead of winning.`,
+        userId: activePlayer.userId,
+      });
+      // Fall through to card effect processing and turn continuation
+    } else {
+      state.gameStatus = 'completed';
+      state.winnerUserId = activePlayer.userId;
+      state.endedAt = Date.now();
+      state.lastActionMessage = `CHECK UP! ${playerName} has won the Whot game! 🏆`;
+      events.push({
+        type: 'game_win',
+        message: state.lastActionMessage,
+        userId: activePlayer.userId,
+      });
+      return { success: true, state, events };
+    }
   }
 
   // 3. Process Card Effects
   let nextPlayerIndex = getNextActivePlayerIndex(state);
   let actionDesc = `${playerName} played ${card.shape.toUpperCase()} ${card.number}.`;
+  let isPlayAgain = false;
+  let playAgainReason: 'general_market' | 'hold_on' | 'suspension' | null = null;
+  let generalMarketActive = false;
 
   // Defending / Canceling pick with Whot 20
   if (card.number === 20 && state.pendingPickCount > 0 && state.ruleset.whot20DefendsAgainstPicks) {
@@ -299,6 +313,8 @@ export function playCard(
   if (card.number === 1 && state.ruleset.specials.holdOn) {
     state.activeShape = card.shape;
     nextPlayerIndex = state.activePlayerIndex; // Play again!
+    isPlayAgain = true;
+    playAgainReason = 'hold_on';
     actionDesc += ' HOLD ON! Play again.';
     events.push({ type: 'hold_on', message: `${playerName}: Hold On! Plays again.`, userId: activePlayer.userId });
   }
@@ -326,6 +342,8 @@ export function playCard(
     if (activeNonForfeited.length === 2) {
       // In a 2-player game, suspension acts as play again
       nextPlayerIndex = state.activePlayerIndex;
+      isPlayAgain = true;
+      playAgainReason = 'suspension';
       actionDesc += ' SUSPENSION! Opponent skipped, you play again.';
     } else {
       // Skip next player
@@ -338,8 +356,10 @@ export function playCard(
   // Special Card: 14 (General Market)
   else if (card.number === 14 && state.ruleset.specials.generalMarket) {
     state.activeShape = card.shape;
-    actionDesc += ' GENERAL MARKET! All other players draw 1 card!';
+    actionDesc += ' General Market! Everyone picks 1. Play again.';
 
+    // Every other player draws 1 card from market.
+    // Discard pile (except the top card 14) is reshuffled into market if market runs out.
     state.players.forEach((p, idx) => {
       if (idx !== state.activePlayerIndex && !p.isForfeited) {
         ensureDrawPileCards(state, 1, rng);
@@ -349,7 +369,18 @@ export function playCard(
       }
     });
 
-    events.push({ type: 'general_market', message: actionDesc, userId: activePlayer.userId });
+    // The player who played it MUST play again (same turn).
+    // If they have no playable card, they draw 1 from market and turn passes to next player.
+    nextPlayerIndex = state.activePlayerIndex;
+    isPlayAgain = true;
+    playAgainReason = 'general_market';
+    generalMarketActive = true;
+
+    events.push({
+      type: 'general_market',
+      message: 'General Market! Everyone picks 1. Play again.',
+      userId: activePlayer.userId,
+    });
   }
   // Special Card: 20 (Whot - Wild Shape)
   else if (card.number === 20) {
@@ -369,6 +400,9 @@ export function playCard(
   }
 
   state.activePlayerIndex = nextPlayerIndex;
+  state.isPlayAgainTurn = isPlayAgain;
+  state.playAgainReason = playAgainReason;
+  state.generalMarketActive = generalMarketActive;
   state.turnStep += 1;
   state.lastActionMessage = actionDesc;
 
@@ -407,6 +441,9 @@ export function drawCard(
 
     state.pendingPickCount = 0;
     state.pendingPickType = null;
+    state.isPlayAgainTurn = false;
+    state.playAgainReason = null;
+    state.generalMarketActive = false;
     state.activePlayerIndex = getNextActivePlayerIndex(state);
     state.turnStep += 1;
     state.lastActionMessage = message;
@@ -432,6 +469,9 @@ export function drawCard(
   const message = `${playerName} drew a card.`;
   events.push({ type: 'card_drawn', message, userId: activePlayer.userId });
 
+  state.isPlayAgainTurn = false;
+  state.playAgainReason = null;
+  state.generalMarketActive = false;
   state.activePlayerIndex = getNextActivePlayerIndex(state);
   state.turnStep += 1;
   state.lastActionMessage = message;
@@ -549,5 +589,8 @@ export function getPlayerView(state: EngineState, userId: string): PlayerGameVie
     gameStatus: state.gameStatus,
     lastActionMessage: state.lastActionMessage,
     turnTimerSec: state.ruleset.turnTimerSec,
+    isPlayAgainTurn: state.isPlayAgainTurn ?? false,
+    playAgainReason: state.playAgainReason ?? null,
+    generalMarketActive: state.generalMarketActive ?? false,
   };
 }

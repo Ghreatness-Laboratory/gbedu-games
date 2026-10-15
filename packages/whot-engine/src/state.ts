@@ -31,6 +31,9 @@ export interface EngineState {
   winnerUserId: string | null;
   startedAt: number;
   endedAt?: number;
+  isPlayAgainTurn?: boolean;
+  playAgainReason?: 'general_market' | 'hold_on' | 'suspension' | null;
+  generalMarketActive?: boolean;
 }
 
 export function cloneState(state: EngineState): EngineState {

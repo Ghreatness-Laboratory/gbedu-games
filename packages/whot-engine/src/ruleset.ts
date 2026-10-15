@@ -14,7 +14,7 @@ export const DEFAULT_RULESET: Ruleset = {
     generalMarket: true,
     whot: true,
   },
-  goOutOnSpecial: true,
+  goOutOnSpecial: false,
   calloutsRequired: true,
   calloutPenalty: 2,
   turnTimerSec: 0,

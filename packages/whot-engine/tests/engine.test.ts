@@ -161,7 +161,7 @@ describe('Whot Engine: Gameplay & Specials', () => {
     expect(playRes.state.activePlayerIndex).toBe(2);
   });
 
-  it('handles Card 14 (General Market): all other players draw 1 card', () => {
+  it('handles Card 14 (General Market): every other player draws 1 card and player who played it MUST play again', () => {
     const res = newGame({ roomId: 'room1', players: mockPlayers });
     const state = res.state;
 
@@ -170,13 +170,139 @@ describe('Whot Engine: Gameplay & Specials', () => {
 
     state.players[0].hand = [
       { id: 'gm14', shape: state.activeShape, number: 14, specialType: 'general_market' },
-      { id: 'c2', shape: 'star', number: 7 },
+      { id: 'c2', shape: state.activeShape, number: 7 },
     ];
 
     const playRes = playCard(state, { userId: 'u1', cardId: 'gm14' });
     expect(playRes.success).toBe(true);
+    // Every other player drew 1 card
     expect(playRes.state.players[1].hand).toHaveLength(tobiInitial + 1);
     expect(playRes.state.players[2].hand).toHaveLength(chiInitial + 1);
+
+    // Player who played it MUST play again (same turn)
+    expect(playRes.state.activePlayerIndex).toBe(0);
+    expect(playRes.state.isPlayAgainTurn).toBe(true);
+    expect(playRes.state.generalMarketActive).toBe(true);
+    expect(playRes.state.lastActionMessage).toContain('General Market! Everyone picks 1. Play again.');
+
+    // Now player plays their second card in the same turn
+    const secondPlayRes = playCard(playRes.state, { userId: 'u1', cardId: 'c2' });
+    expect(secondPlayRes.success).toBe(true);
+    // Turn now passes to next player (Tobi)
+    expect(secondPlayRes.state.activePlayerIndex).toBe(1);
+    expect(secondPlayRes.state.isPlayAgainTurn).toBe(false);
+  });
+
+  it('General Market: if player has no playable card, they draw 1 from market and turn passes', () => {
+    const res = newGame({ roomId: 'room1', players: mockPlayers });
+    const state = res.state;
+
+    // Discard is star 4, activeShape is circle
+    state.discardPile = [{ id: 'top_card', shape: 'circle', number: 4 }];
+    state.activeShape = 'circle';
+
+    // Player 0 plays 14 of circle, with an unplayable square 3 left
+    state.players[0].hand = [
+      { id: 'gm14', shape: 'circle', number: 14, specialType: 'general_market' },
+      { id: 'unplayable', shape: 'square', number: 3 },
+    ];
+
+    const playRes = playCard(state, { userId: 'u1', cardId: 'gm14', calledLastCard: true });
+    expect(playRes.success).toBe(true);
+    expect(playRes.state.activePlayerIndex).toBe(0);
+
+    // Legals should be empty because square 3 does not match circle or 14
+    const legals = legalCardIds(playRes.state, 0);
+    expect(legals).toEqual([]);
+
+    // Player must draw 1 from market
+    const drawRes = drawCard(playRes.state, { userId: 'u1' });
+    expect(drawRes.success).toBe(true);
+    expect(drawRes.state.players[0].hand).toHaveLength(2); // square 3 + 1 drawn
+    // Turn passes to next player
+    expect(drawRes.state.activePlayerIndex).toBe(1);
+    expect(drawRes.state.isPlayAgainTurn).toBe(false);
+  });
+
+  it('reshuffles discard pile (except top card) into market if it runs out during General Market', () => {
+    const res = newGame({ roomId: 'room1', players: mockPlayers });
+    const state = res.state;
+
+    // Empty the draw pile completely
+    state.drawPile = [];
+
+    // Pile up 5 discarded cards
+    state.discardPile = [
+      { id: 'd1', shape: 'star', number: 3 },
+      { id: 'd2', shape: 'circle', number: 5 },
+      { id: 'd3', shape: 'triangle', number: 7 },
+      { id: 'top_before', shape: 'cross', number: 10 },
+    ];
+    state.activeShape = 'cross';
+
+    state.players[0].hand = [
+      { id: 'gm14', shape: 'cross', number: 14, specialType: 'general_market' },
+      { id: 'c_extra', shape: 'star', number: 8 },
+    ];
+
+    const tobiInitial = state.players[1].hand.length;
+    const chiInitial = state.players[2].hand.length;
+
+    const playRes = playCard(state, { userId: 'u1', cardId: 'gm14' });
+    expect(playRes.success).toBe(true);
+
+    // Both players should have successfully received a card from the reshuffled market
+    expect(playRes.state.players[1].hand).toHaveLength(tobiInitial + 1);
+    expect(playRes.state.players[2].hand).toHaveLength(chiInitial + 1);
+
+    // Top discard remains the played General Market (gm14)
+    expect(playRes.state.discardPile).toHaveLength(1);
+    expect(playRes.state.discardPile[0].id).toBe('gm14');
+  });
+
+  it('room setting "Allow finishing on special cards" (default off): prevents winning on special cards', () => {
+    // 1. By default, goOutOnSpecial is false
+    expect(DEFAULT_RULESET.goOutOnSpecial).toBe(false);
+
+    const res = newGame({ roomId: 'room1', players: mockPlayers, ruleset: { goOutOnSpecial: false } });
+    const state = res.state;
+
+    // Give Ada only 1 card left, and it's a special card (Hold On: 1)
+    state.players[0].hand = [
+      { id: 's1', shape: state.activeShape, number: 1, specialType: 'hold_on' },
+    ];
+
+    // Cannot legally play it to check up/win
+    const legals = legalCardIds(state, 0);
+    expect(legals).not.toContain('s1');
+
+    // If playCard is forced, they must draw 1 card instead of winning
+    const playAttempt = playCard(state, { userId: 'u1', cardId: 's1', calledCheckUp: true });
+    // In our engine, playing an illegal card is rejected
+    expect(playAttempt.success).toBe(false);
+    expect(playAttempt.error).toContain('Illegal move');
+
+    // Drawing from market succeeds
+    const drawRes = drawCard(state, { userId: 'u1' });
+    expect(drawRes.success).toBe(true);
+    expect(drawRes.state.players[0].hand).toHaveLength(2); // Had 1, drew 1
+  });
+
+  it('room setting "Allow finishing on special cards": allows winning when set to true', () => {
+    const res = newGame({ roomId: 'room1', players: mockPlayers, ruleset: { goOutOnSpecial: true, calloutsRequired: false } });
+    const state = res.state;
+
+    state.players[0].hand = [
+      { id: 's1', shape: state.activeShape, number: 1, specialType: 'hold_on' },
+    ];
+
+    const legals = legalCardIds(state, 0);
+    expect(legals).toContain('s1');
+
+    const winPlay = playCard(state, { userId: 'u1', cardId: 's1', calledCheckUp: true });
+    expect(winPlay.success).toBe(true);
+    expect(winPlay.state.gameStatus).toBe('completed');
+    expect(winPlay.state.winnerUserId).toBe('u1');
   });
 
   it('handles forfeit: if 2 players play and 1 forfeits, the other wins', () => {

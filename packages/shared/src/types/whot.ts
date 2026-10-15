@@ -31,7 +31,7 @@ export interface Ruleset {
   crossPassing: boolean; // default false
   whot20DefendsAgainstPicks: boolean; // default false
   specials: SpecialsConfig;
-  goOutOnSpecial: boolean; // default true
+  goOutOnSpecial: boolean; // default false ("Allow finishing on special cards")
   calloutsRequired: boolean; // default true
   calloutPenalty: number; // 1 to 5, default 2
   turnTimerSec: number; // 0 (off), 15, 30, 60
@@ -78,4 +78,7 @@ export interface PlayerGameView {
   lastActionMessage?: string;
   turnTimerSec: number;
   currentTurnRemainingSec?: number;
+  isPlayAgainTurn?: boolean;
+  playAgainReason?: 'general_market' | 'hold_on' | 'suspension' | null;
+  generalMarketActive?: boolean;
 }

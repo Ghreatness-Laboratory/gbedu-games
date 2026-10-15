@@ -17,6 +17,8 @@ interface ActiveSession {
   turnTimeoutTimer?: NodeJS.Timeout;
   turnRemainingSec?: number;
   disconnectTimers: Map<string, { timer: NodeJS.Timeout; expiresAt: number }>;
+  lastMoverId?: string;
+  allowedPlayAgainUserId?: string;
 }
 
 const activeSessions = new Map<string, ActiveSession>();
@@ -101,6 +103,20 @@ export function executePlayerMove(
   const session = activeSessions.get(roomId);
   if (!session) return { success: false, error: 'Game session not active' };
 
+  // Server-side turn validation:
+  const activePlayer = session.engineState.players[session.engineState.activePlayerIndex];
+  if (!activePlayer || activePlayer.userId !== userId) {
+    return { success: false, error: 'Not your turn' };
+  }
+
+  // Consecutive move check: allowed ONLY if previous move triggered a play-again turn (General Market or Hold On)
+  if (session.lastMoverId === userId && session.allowedPlayAgainUserId !== userId) {
+    return {
+      success: false,
+      error: 'Consecutive moves from the same player are only allowed on General Market or Hold On play-again turns',
+    };
+  }
+
   const res = playCard(session.engineState, {
     userId,
     cardId: data.cardId,
@@ -115,6 +131,14 @@ export function executePlayerMove(
 
   session.engineState = res.state;
   saveSnapshot(roomId, session.engineState);
+
+  // If the move resulted in a play-again turn for the same player, allow their consecutive move
+  if (res.state.isPlayAgainTurn && res.state.players[res.state.activePlayerIndex]?.userId === userId) {
+    session.allowedPlayAgainUserId = userId;
+  } else {
+    session.allowedPlayAgainUserId = undefined;
+  }
+  session.lastMoverId = userId;
 
   if (session.engineState.gameStatus === 'completed') {
     handleGameOver(session, onGameCompletedCallback);
@@ -135,6 +159,19 @@ export function executePlayerDraw(
   const session = activeSessions.get(roomId);
   if (!session) return { success: false, error: 'Game session not active' };
 
+  const activePlayer = session.engineState.players[session.engineState.activePlayerIndex];
+  if (!activePlayer || activePlayer.userId !== userId) {
+    return { success: false, error: 'Not your turn' };
+  }
+
+  // Consecutive draw check: allowed ONLY if player was in a play-again turn with no playable cards
+  if (session.lastMoverId === userId && session.allowedPlayAgainUserId !== userId) {
+    return {
+      success: false,
+      error: 'Consecutive moves from the same player are only allowed on General Market or Hold On play-again turns',
+    };
+  }
+
   const res = drawCard(session.engineState, { userId });
   if (!res.success) {
     return { success: false, error: res.error };
@@ -142,6 +179,10 @@ export function executePlayerDraw(
 
   session.engineState = res.state;
   saveSnapshot(roomId, session.engineState);
+
+  // Drawing ends the play-again turn and passes the turn to the next player
+  session.allowedPlayAgainUserId = undefined;
+  session.lastMoverId = userId;
 
   resetTurnTimer(session, broadcastStateCallback, onGameCompletedCallback);
   broadcastStateCallback(roomId);

@@ -183,8 +183,8 @@ export const HouseRulesPanel: React.FC<HouseRulesPanelProps> = ({
           },
           {
             key: 'goOutOnSpecial',
-            label: 'Go Out On Special',
-            desc: 'Last card can be a special card (Hold On, Pick 2, etc.)',
+            label: 'Allow finishing on special cards',
+            desc: 'When off, a player whose last card is a special (1, 2, 5, 8, 14, 20) must draw 1 card instead of winning',
             value: ruleset.goOutOnSpecial,
           },
           {
