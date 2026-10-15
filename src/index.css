@@ -23,6 +23,7 @@ html, body {
   background-color: #070c18;
   color: #f3f4f6;
   user-select: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 #root {
@@ -61,24 +62,25 @@ h1, h2, h3, .font-display {
 
 /* Custom glowing effects */
 .glow-gold {
-  box-shadow: 0 0 25px rgba(245, 158, 11, 0.45);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
 }
 
 .glow-emerald {
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.45);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
 }
 
 .glow-flame {
-  box-shadow: 0 0 25px rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
 }
 
 .glow-pulse-gold {
-  animation: glow-pulse 2.5s infinite alternate ease-in-out;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  animation: glow-pulse 3s infinite alternate ease-in-out;
 }
 
 @keyframes glow-pulse {
-  0% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
-  100% { box-shadow: 0 0 35px rgba(255, 121, 0, 0.6), 0 0 60px rgba(245, 158, 11, 0.3); }
+  0% { opacity: 0.92; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.01); }
 }
 
 /* Float drift animation for floating game pieces */

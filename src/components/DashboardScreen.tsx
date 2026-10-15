@@ -143,37 +143,37 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
         <div
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-          className="absolute top-4 left-[3%] text-2xl opacity-10 filter drop-shadow-[0_0_8px_rgba(255,183,3,0.3)] animate-float-1"
+          className="absolute top-4 left-[3%] text-2xl opacity-15 animate-float-1"
         >
           🎲
         </div>
         <div
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-          className="absolute top-16 right-[4%] text-2xl opacity-10 filter drop-shadow-[0_0_8px_rgba(31,209,160,0.3)] animate-float-2"
+          className="absolute top-16 right-[4%] text-2xl opacity-15 animate-float-2"
         >
           ♞
         </div>
         <div
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-          className="absolute top-1/2 left-[2%] text-2xl opacity-10 filter drop-shadow-[0_0_8px_rgba(255,122,0,0.3)] animate-float-3"
+          className="absolute top-1/2 left-[2%] text-2xl opacity-15 animate-float-3"
         >
           🟤
         </div>
         <div
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-          className="absolute top-1/2 right-[2%] text-2xl opacity-10 filter drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] animate-float-1"
+          className="absolute top-1/2 right-[2%] text-2xl opacity-15 animate-float-1"
         >
           ⚽
         </div>
         <div
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-          className="absolute bottom-16 left-[5%] text-2xl opacity-10 filter drop-shadow-[0_0_8px_rgba(255,122,0,0.3)] animate-float-2"
+          className="absolute bottom-16 left-[5%] text-2xl opacity-15 animate-float-2"
         >
           ❌
         </div>
         <div
           style={{ animationPlayState: isPaused ? 'paused' : 'running' }}
-          className="absolute bottom-16 right-[6%] text-2xl opacity-10 filter drop-shadow-[0_0_8px_rgba(31,209,160,0.3)] animate-float-3"
+          className="absolute bottom-16 right-[6%] text-2xl opacity-15 animate-float-3"
         >
           ⭕
         </div>

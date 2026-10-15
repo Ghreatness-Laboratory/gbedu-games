@@ -248,10 +248,10 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Screen Arena (min-height 100dvh scroller with touch momentum scrolling, with bottom padding for fixed nav) */}
+      {/* Main Screen Arena (let content area scroll with bottom padding for fixed nav) */}
       <main
-        className={`flex-1 w-full min-h-[calc(100dvh-48px)] overflow-y-auto overscroll-y-contain touch-scroller flex flex-col ${
-          !gameView ? 'pb-[calc(68px+env(safe-area-inset-bottom,0px))]' : 'pb-[env(safe-area-inset-bottom,0px)]'
+        className={`flex-1 w-full flex flex-col ${
+          !gameView ? 'pb-[calc(76px+env(safe-area-inset-bottom,0px))]' : 'pb-[env(safe-area-inset-bottom,0px)]'
         }`}
       >
         {activeSubView === 'ranks' ? (

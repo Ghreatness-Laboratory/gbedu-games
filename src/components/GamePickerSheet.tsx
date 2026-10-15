@@ -130,19 +130,13 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.3 }}
-            onDragEnd={(_e, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 300) {
-                soundEngine.playClick();
-                onClose();
-              }
-            }}
             className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0d1426] border-t sm:border border-[#26314d] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[88dvh] sm:max-h-[85vh] flex flex-col z-50 text-white pb-[max(1rem,env(safe-area-inset-bottom))] overscroll-contain"
           >
             {/* Drag Handle Bar (Mobile Only) */}
-            <div className="pt-3 pb-1 flex justify-center sm:hidden cursor-grab active:cursor-grabbing">
+            <div
+              onClick={onClose}
+              className="pt-3 pb-1 flex justify-center sm:hidden cursor-pointer active:opacity-70"
+            >
               <div className="w-12 h-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors" />
             </div>
 
@@ -203,7 +197,10 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
             </div>
 
             {/* Scrollable Game Grid Area */}
-            <div className="flex-1 overflow-y-auto overscroll-contain touch-scroller px-5 py-4 space-y-4">
+            <div
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-scroller px-5 py-4 space-y-4"
+              style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+            >
               {/* Highlighted "Last Played" Banner (If in 'All' category and game is playable) */}
               {selectedCategory === 'All' && lastPlayed && (
                 <div className="relative group">

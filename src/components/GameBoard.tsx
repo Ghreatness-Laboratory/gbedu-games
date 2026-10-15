@@ -47,15 +47,25 @@ export const GameBoard: React.FC = () => {
   useEffect(() => {
     if (gameView?.isGameOver) {
       confetti({
-        particleCount: 120,
-        spread: 80,
+        particleCount: 45,
+        spread: 60,
         origin: { y: 0.5 },
       });
     }
   }, [gameView?.isGameOver]);
 
   if (!gameView || !user) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4 text-center space-y-4">
+        <p className="text-gray-400 text-sm font-bold">No active Whot match in progress.</p>
+        <button
+          onClick={() => leaveRoom()}
+          className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs cursor-pointer shadow-lg"
+        >
+          Return to Hub
+        </button>
+      </div>
+    );
   }
 
   const isMyTurn = gameView.activeUserId === user.id && !gameView.isGameOver;

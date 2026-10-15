@@ -42,7 +42,17 @@ interface GameLobbyScreenProps {
 export const GameLobbyScreen: React.FC<GameLobbyScreenProps> = ({ onOpenPicker }) => {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const { user, currentRoom, createRoom, joinRoom, roomError, leaveRoom } = useWhotStore();
+  const {
+    user,
+    currentRoom,
+    createRoom,
+    joinRoom,
+    roomError,
+    leaveRoom,
+    gameView,
+    addBotPlayer,
+    startGame,
+  } = useWhotStore();
 
   const game = getGameById(gameId || 'xo') || GAMES_CATALOG[0];
 
@@ -62,8 +72,20 @@ export const GameLobbyScreen: React.FC<GameLobbyScreenProps> = ({ onOpenPicker }
     navigate('/home');
   };
 
-  const handleLaunchMode = (mode: 'ai' | 'pass') => {
+  const handleLaunchMode = async (mode: 'ai' | 'pass') => {
     soundEngine.playAgogo(true);
+    if (game.id === 'whot') {
+      const ok = await createRoom();
+      if (ok) {
+        if (mode === 'ai') {
+          addBotPlayer('Tobi (AI)', '🦁');
+        } else {
+          addBotPlayer('Player 2 (Local)', '🕶️');
+        }
+        startGame();
+      }
+      return;
+    }
     setActiveGameSession(mode);
   };
 
@@ -112,8 +134,15 @@ export const GameLobbyScreen: React.FC<GameLobbyScreenProps> = ({ onOpenPicker }
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  // If Whot multiplayer room is active, render Whot Lobby or GameBoard
+  // If Whot multiplayer room is active, render Whot GameBoard (if in_progress) or LobbyScreen
   if (game.id === 'whot' && currentRoom) {
+    if (currentRoom.status === 'in_progress' && gameView) {
+      return (
+        <div className="w-full flex-1 flex flex-col items-center justify-center py-2 sm:py-4">
+          <GameBoard />
+        </div>
+      );
+    }
     return (
       <div className="w-full flex-1 flex flex-col items-center justify-center py-4">
         <div className="w-full max-w-4xl px-4 mb-2 flex items-center justify-between">
@@ -125,7 +154,7 @@ export const GameLobbyScreen: React.FC<GameLobbyScreenProps> = ({ onOpenPicker }
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Lobby</span>
+            <span>Leave Lobby</span>
           </button>
         </div>
         <LobbyScreen />
