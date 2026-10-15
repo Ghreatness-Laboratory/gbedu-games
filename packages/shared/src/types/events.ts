@@ -25,6 +25,7 @@ export interface RoomPlayer {
 export interface RoomDetails {
   id: string;
   code: string;
+  game?: string;
   hostId: string;
   status: 'lobby' | 'in_progress' | 'completed' | 'abandoned';
   ruleset: Ruleset;
