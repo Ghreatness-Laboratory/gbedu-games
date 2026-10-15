@@ -89,17 +89,17 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className={`w-full ${compact ? 'space-y-2' : 'space-y-4'}`}>
       {/* 1. Big Live Character Preview */}
-      <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl bg-gradient-to-b from-black/50 via-[#0e1628]/60 to-black/40 border-2 border-amber-500/30 overflow-hidden shadow-xl">
+      <div className={`relative flex flex-col items-center justify-center ${compact ? 'p-2.5 rounded-2xl' : 'p-4 rounded-3xl'} bg-gradient-to-b from-black/50 via-[#0e1628]/60 to-black/40 border-2 border-amber-500/30 overflow-hidden shadow-xl`}>
         {/* Ambient Aura Lighting Behind Live Preview */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-gradient-to-tr from-amber-500/20 via-pink-500/15 to-emerald-500/20 blur-2xl pointer-events-none" />
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${compact ? 'w-28 h-28' : 'w-48 h-48'} rounded-full bg-gradient-to-tr from-amber-500/20 via-pink-500/15 to-emerald-500/20 blur-2xl pointer-events-none`} />
 
         {/* Live SVG Character */}
         <motion.div
           animate={isHype ? { scale: [1, 1.15, 1], rotate: [0, -3, 3, 0] } : {}}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="relative z-10 my-1 cursor-pointer"
+          className="relative z-10 my-0.5 cursor-pointer"
           onClick={() => {
             soundEngine.playAgogo(true);
             setIsHype(true);
@@ -109,37 +109,34 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
         >
           <Avatar
             config={currentConfig}
-            size={compact ? 130 : 170}
+            size={compact ? 84 : 170}
             interactive={true}
             showAura={true}
-            className="drop-shadow-[0_12px_24px_rgba(0,0,0,0.6)]"
+            className="drop-shadow-[0_8px_16px_rgba(0,0,0,0.6)]"
           />
         </motion.div>
 
         {/* Tagline / Name Banner */}
-        <div className="relative z-10 text-center mt-2 px-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 border border-white/15 text-xs font-black text-amber-300 tracking-wide font-display shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="relative z-10 text-center mt-1 px-2">
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/60 border border-white/15 text-[11px] font-black text-amber-300 tracking-wide font-display shadow-sm">
+            <Sparkles className="w-3 h-3 text-amber-400" />
             <span>{activePreset ? activePreset.label : 'Custom Odogwu'}</span>
           </div>
-          <p className="text-[11px] text-gray-300 mt-1 max-w-[280px] line-clamp-1">
-            {activePreset ? activePreset.tagline : 'Crafted with authentic Nigerian drip'}
-          </p>
         </div>
 
         {/* Quick Toolbar: Shuffle + Customize Toggle */}
-        <div className="relative z-10 flex items-center gap-2 mt-3 w-full max-w-xs justify-center">
+        <div className="relative z-10 flex items-center gap-2 mt-2 w-full max-w-xs justify-center">
           <motion.button
             whileTap={{ scale: 0.94 }}
             type="button"
             onClick={handleShuffle}
-            className="flex-1 min-h-[48px] px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer transition-all"
+            className="flex-1 min-h-[40px] px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer transition-all"
           >
             <motion.div
               animate={isSpinning ? { rotate: 360 } : { rotate: 0 }}
               transition={{ duration: 0.35, ease: 'easeInOut' }}
             >
-              <Dices className="w-4 h-4 stroke-[2.5]" />
+              <Dices className="w-3.5 h-3.5 stroke-[2.5]" />
             </motion.div>
             <span>Shuffle</span>
           </motion.button>
@@ -150,13 +147,13 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
               soundEngine.playClick();
               setActiveTab((prev) => (prev === 'presets' ? 'skin' : 'presets'));
             }}
-            className={`min-h-[48px] px-4 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-[40px] px-3.5 py-1.5 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               activeTab !== 'presets'
                 ? 'bg-amber-400/20 text-amber-300 border-amber-400 shadow-sm'
                 : 'bg-white/10 text-white border-white/15 hover:bg-white/15'
             }`}
           >
-            <Sliders className="w-4 h-4" />
+            <Sliders className="w-3.5 h-3.5" />
             <span>{activeTab === 'presets' ? 'Customize' : 'Done'}</span>
           </button>
         </div>
