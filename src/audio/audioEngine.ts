@@ -485,6 +485,118 @@ class SoundEngine {
       this.loopTimerId = null;
     }
   }
+
+  // 11. Core Game UI Sound Effects
+  public playClick(time?: number) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = time ?? this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, t);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.04);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.045);
+  }
+
+  public playMove(pitch: number = 520, time?: number) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = time ?? this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(pitch * 1.25, t + 0.08);
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.13);
+  }
+
+  public playDiceRoll() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const clicks = 5;
+    for (let i = 0; i < clicks; i++) {
+      const t = now + i * 0.06;
+      this.playShekere(t);
+      this.playSynthNote(400 + Math.random() * 300, 0.03, t);
+    }
+  }
+
+  public playWin() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Ascending celebratory fanfare
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5, E5, G5, C6, E6
+    notes.forEach((freq, idx) => {
+      this.playSynthNote(freq, 0.25, t + idx * 0.1);
+    });
+    this.playCheerSound();
+  }
+
+  public playLose() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Descending minor progression
+    const notes = [440, 415.3, 392, 349.2];
+    notes.forEach((freq, idx) => {
+      this.playSynthNote(freq, 0.28, t + idx * 0.15);
+    });
+  }
+
+  public playSeedDrop(pitchVariance: number = 0) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    // Warm wooden hollow click (like ayo cowrie shell/seed on carved wood)
+    const base = 480 + pitchVariance * 25;
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(base, t);
+    osc.frequency.exponentialRampToValueAtTime(base * 0.7, t + 0.06);
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.08);
+  }
+
+  public playBallKick() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    this.playKick();
+    this.playTalkingDrum(true);
+  }
+
+  public playTilePlace() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.playSynthNote(587.33, 0.08, t); // D5
+    this.playRimshot(t);
+  }
 }
 
 export const soundEngine = new SoundEngine();

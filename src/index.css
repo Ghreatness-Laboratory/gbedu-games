@@ -6,18 +6,38 @@
     --accent-emerald: #10b981;
     --accent-flame: #ef4444;
     --accent-purple: #8b5cf6;
+    --gbedu-gold: #f59e0b;
+    --gbedu-orange: #ff7900;
+    --gbedu-magenta: #ec4899;
+    --gbedu-green: #009a49;
+    --gbedu-dark: #080d1a;
   }
 }
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  background-color: #0b0f17;
+  background-color: #070c18;
   color: #f3f4f6;
   user-select: none;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, .font-display {
   font-family: 'Cabinet Grotesk', 'Space Grotesk', sans-serif;
+}
+
+/* Ankara / Adinkra subtle geometric patterns */
+.ankara-pattern {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.08) 0, rgba(245, 158, 11, 0.08) 3px, transparent 4px),
+    linear-gradient(45deg, rgba(0, 154, 73, 0.04) 25%, transparent 25%, transparent 75%, rgba(0, 154, 73, 0.04) 75%),
+    linear-gradient(-45deg, rgba(255, 121, 0, 0.04) 25%, transparent 25%, transparent 75%, rgba(255, 121, 0, 0.04) 75%);
+  background-size: 40px 40px;
+}
+
+.ankara-diamond {
+  background-image: radial-gradient(circle, rgba(245,158,11,0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* Custom glowing effects */
@@ -33,27 +53,97 @@ h1, h2, h3, .font-display {
   box-shadow: 0 0 25px rgba(239, 68, 68, 0.45);
 }
 
+.glow-pulse-gold {
+  animation: glow-pulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes glow-pulse {
+  0% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.25); }
+  100% { box-shadow: 0 0 35px rgba(255, 121, 0, 0.6), 0 0 60px rgba(245, 158, 11, 0.3); }
+}
+
+/* Float drift animation for floating game pieces */
+@keyframes float-drift-1 {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-24px) rotate(15deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes float-drift-2 {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(-20deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes float-drift-3 {
+  0% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-18px) scale(1.08) rotate(10deg); }
+  100% { transform: translateY(0px) scale(1); }
+}
+
+.animate-float-1 {
+  animation: float-drift-1 6s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-drift-2 8s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: float-drift-3 7s ease-in-out infinite;
+}
+
+/* Equalizer bars animation */
+@keyframes eq-bounce-1 { 0%, 100% { height: 25%; } 50% { height: 95%; } }
+@keyframes eq-bounce-2 { 0%, 100% { height: 75%; } 50% { height: 35%; } }
+@keyframes eq-bounce-3 { 0%, 100% { height: 40%; } 50% { height: 100%; } }
+@keyframes eq-bounce-4 { 0%, 100% { height: 90%; } 50% { height: 20%; } }
+@keyframes eq-bounce-5 { 0%, 100% { height: 50%; } 50% { height: 85%; } }
+
+.animate-eq-1 { animation: eq-bounce-1 0.75s ease-in-out infinite; }
+.animate-eq-2 { animation: eq-bounce-2 0.65s ease-in-out infinite; }
+.animate-eq-3 { animation: eq-bounce-3 0.85s ease-in-out infinite; }
+.animate-eq-4 { animation: eq-bounce-4 0.6s ease-in-out infinite; }
+.animate-eq-5 { animation: eq-bounce-5 0.8s ease-in-out infinite; }
+
+/* Error shake */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-1,
+  .animate-float-2,
+  .animate-float-3,
+  .animate-eq-1,
+  .animate-eq-2,
+  .animate-eq-3,
+  .animate-eq-4,
+  .animate-eq-5,
+  .glow-pulse-gold {
+    animation: none !important;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #070c18;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
-
-@keyframes pulse-subtle {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.9; }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s infinite ease-in-out;
+  background: #334155;
 }
