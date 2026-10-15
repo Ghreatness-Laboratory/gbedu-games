@@ -71,6 +71,16 @@ export const App: React.FC = () => {
     initAuth();
   }, [initAuth]);
 
+  // Clean up body/html scroll lock on route/params change or unmount
+  useEffect(() => {
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [location.pathname, location.search]);
+
   // Idle prefetch of GamePickerSheet for instantaneous opening
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -107,9 +117,9 @@ export const App: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-[100dvh] bg-[#0d1426] text-white flex flex-col justify-between">
+      <div className="min-h-[100dvh] w-full bg-[#0d1426] text-white flex flex-col justify-between overflow-y-auto touch-scroller">
         <AuthScreen />
-        <footer className="py-4 text-center text-xs text-gray-500 border-t border-[#26314d]">
+        <footer className="py-4 text-center text-xs text-gray-500 border-t border-[#26314d] shrink-0">
           Gbedu Games • Real Multiplayer Naija Party Games • FragNaija by Ghreatness Laboratory
         </footer>
       </div>
@@ -181,7 +191,7 @@ export const App: React.FC = () => {
   ];
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#0d1426] text-white flex flex-col select-none pt-[env(safe-area-inset-top)] selection:bg-[#ff7a00] selection:text-black">
+    <div className="min-h-[100dvh] w-full bg-[#0d1426] text-white flex flex-col select-none pt-[env(safe-area-inset-top)] selection:bg-[#ff7a00] selection:text-black relative">
       {/* 1. SLIM HEADER (48px) */}
       <header className="sticky top-0 z-40 h-12 min-h-[48px] max-h-[48px] bg-[#0d1426] border-b border-[#26314d] px-3 sm:px-4 flex items-center justify-between shrink-0">
         {/* Logo icon + "GBEDU GAMES" on one line (No 'PLAY • CONNECT • WIN') */}
@@ -238,10 +248,14 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Screen Arena (100dvh fitted, with padding for bottom nav) */}
-      <main className={`flex-1 min-h-0 overflow-hidden flex flex-col justify-between ${!gameView ? 'pb-[60px]' : ''}`}>
+      {/* Main Screen Arena (min-height 100dvh scroller with touch momentum scrolling, with bottom padding for fixed nav) */}
+      <main
+        className={`flex-1 w-full min-h-[calc(100dvh-48px)] overflow-y-auto overscroll-y-contain touch-scroller flex flex-col ${
+          !gameView ? 'pb-[calc(68px+env(safe-area-inset-bottom,0px))]' : 'pb-[env(safe-area-inset-bottom,0px)]'
+        }`}
+      >
         {activeSubView === 'ranks' ? (
-          <div className="flex-1 flex flex-col overflow-y-auto">
+          <div className="flex-1 flex flex-col">
             <div className="px-4 py-2 flex items-center justify-between border-b border-[#26314d] shrink-0">
               <span className="text-xs font-black uppercase text-[#ffb703]">Hall of Fame</span>
               <button

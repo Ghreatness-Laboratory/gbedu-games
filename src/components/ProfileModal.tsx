@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlayerProfile } from '../types';
 import { X, Check, Sparkles, User } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
@@ -41,6 +41,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [selectedTitle, setSelectedTitle] = useState(player.title || 'Odogwu');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Lock scroll only while profile modal is open with guaranteed cleanup
+  useEffect(() => {
+    if (isOpen) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || '';
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+      };
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,8 +90,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-gradient-to-b from-[#131b2e] via-[#0f1728] to-[#0b101c] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up my-auto max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain touch-scroller">
+      <div className="w-full max-w-lg bg-gradient-to-b from-[#131b2e] via-[#0f1728] to-[#0b101c] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up my-auto max-h-[92vh] overflow-y-auto overscroll-contain touch-scroller">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">

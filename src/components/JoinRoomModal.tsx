@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, Hash, Users, Sparkles } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
@@ -21,6 +21,23 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({
   const [code, setCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Lock scroll only while modal is open with guaranteed cleanup
+  useEffect(() => {
+    if (isOpen) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || '';
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+      };
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +76,7 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Join Room"
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto overscroll-contain touch-scroller"
         >
           {/* Backdrop */}
           <motion.div
@@ -67,7 +84,7 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer overscroll-contain"
           />
 
           {/* Modal Container */}

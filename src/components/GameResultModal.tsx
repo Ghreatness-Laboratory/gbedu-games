@@ -23,6 +23,11 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
 }) => {
   useEffect(() => {
     if (isOpen) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
       if (isWin) {
         soundEngine.playWin();
         try {
@@ -38,6 +43,14 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
       } else {
         soundEngine.playLose();
       }
+
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || '';
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+      };
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
   }, [isOpen, isWin]);
 
@@ -47,7 +60,7 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overscroll-contain overflow-y-auto touch-scroller">
         <motion.div
           initial={{ scale: 0.8, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}

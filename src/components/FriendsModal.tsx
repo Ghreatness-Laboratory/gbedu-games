@@ -40,6 +40,23 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ isOpen, onClose }) =
   const [activeTab, setActiveTab] = useState<'friends' | 'search' | 'requests'>('friends');
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
+  // Lock scroll only while friends modal is open with guaranteed cleanup
+  useEffect(() => {
+    if (isOpen) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || '';
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+      };
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+  }, [isOpen]);
+
   const fetchFriendsAndRequests = async () => {
     if (!user) return;
     if (isSupabaseConfigured) {
@@ -239,8 +256,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ isOpen, onClose }) =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-[#121927] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-4 animate-scale-up">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto overscroll-contain touch-scroller">
+      <div className="w-full max-w-lg bg-[#121927] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-4 animate-scale-up overscroll-contain">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -295,7 +312,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Content Area */}
-        <div className="min-h-[240px] max-h-[360px] overflow-y-auto space-y-2 pr-1">
+        <div className="min-h-[240px] max-h-[360px] overflow-y-auto overscroll-contain touch-scroller space-y-2 pr-1">
           {activeTab === 'friends' && (
             <div>
               {friends.length === 0 ? (

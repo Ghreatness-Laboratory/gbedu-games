@@ -122,7 +122,7 @@ export const GameBoard: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full max-w-5xl mx-auto h-[calc(100vh-80px)] flex flex-col justify-between overflow-hidden px-2 sm:px-4 py-2 select-none">
+    <div className="relative w-full max-w-5xl mx-auto min-h-[calc(100dvh-80px)] flex flex-col justify-between px-2 sm:px-4 py-2 select-none gap-2">
       {/* 1. Header Bar: Room Code, Sound Toggle, Connection status, Chat button */}
       <div className="flex items-center justify-between px-3 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 z-20 shrink-0">
         <div className="flex items-center gap-2">

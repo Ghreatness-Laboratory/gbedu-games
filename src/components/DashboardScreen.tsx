@@ -103,7 +103,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   // 1. SKELETON LOADER STATE
   if (isAuthLoading || !user) {
     return (
-      <div className="relative w-full h-full max-h-full overflow-hidden flex flex-col justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-sm sm:max-w-md mx-auto select-none">
+      <div className="relative w-full min-h-full flex flex-col justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-sm sm:max-w-md mx-auto select-none gap-2.5 sm:gap-3">
         {/* Welcome Card Skeleton */}
         <div className="p-4 rounded-2xl bg-[#141d33] border border-[#26314d] animate-pulse">
           <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full max-h-full overflow-hidden flex flex-col justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-sm sm:max-w-md mx-auto select-none">
+    <div className="relative w-full min-h-full flex flex-col justify-between py-2 sm:py-3 px-3 sm:px-4 max-w-sm sm:max-w-md mx-auto select-none gap-2.5 sm:gap-3">
       {/* 8. SLOW-FLOATING, LOW-OPACITY GAME PIECES (Paused when picker is open, tab hidden, or reduced motion) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
         <div

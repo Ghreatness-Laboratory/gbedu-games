@@ -49,16 +49,21 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Lock body scroll when picker is open
+  // Lock scroll only while picker is open and guarantee complete cleanup on close/unmount
   useEffect(() => {
     if (isOpen) {
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = document.documentElement.style.overflow;
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevBodyOverflow || '';
+        document.documentElement.style.overflow = prevHtmlOverflow || '';
+      };
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   const showToast = (message: string) => {
@@ -93,7 +98,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label="Choose Your Game"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center overscroll-contain"
         >
           {/* Dimmed Blurred Backdrop */}
           <motion.div
@@ -102,7 +107,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/75 backdrop-blur-md cursor-pointer"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md cursor-pointer overscroll-contain"
           />
 
           {/* Toast Notification for Coming Soon */}
@@ -111,7 +116,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="fixed top-6 left-1/2 -translate-x-1/2 z-60 bg-amber-500 text-black px-4 py-2.5 rounded-2xl shadow-2xl font-black text-xs sm:text-sm flex items-center gap-2 border border-amber-300"
+              className="fixed top-6 left-1/2 -translate-x-1/2 z-60 bg-amber-500 text-black px-4 py-2.5 rounded-2xl shadow-2xl font-black text-xs sm:text-sm flex items-center gap-2 border border-amber-300 pointer-events-none"
             >
               <Lock className="w-4 h-4 shrink-0" />
               <span>{toastMessage}</span>
@@ -134,7 +139,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
                 onClose();
               }
             }}
-            className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0d1426] border-t sm:border border-[#26314d] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[88dvh] sm:max-h-[85vh] flex flex-col z-50 text-white pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="relative w-full sm:max-w-xl md:max-w-2xl bg-[#0d1426] border-t sm:border border-[#26314d] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[88dvh] sm:max-h-[85vh] flex flex-col z-50 text-white pb-[max(1rem,env(safe-area-inset-bottom))] overscroll-contain"
           >
             {/* Drag Handle Bar (Mobile Only) */}
             <div className="pt-3 pb-1 flex justify-center sm:hidden cursor-grab active:cursor-grabbing">
@@ -198,7 +203,7 @@ export const GamePickerSheet: React.FC<GamePickerSheetProps> = ({
             </div>
 
             {/* Scrollable Game Grid Area */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain touch-scroller px-5 py-4 space-y-4">
               {/* Highlighted "Last Played" Banner (If in 'All' category and game is playable) */}
               {selectedCategory === 'All' && lastPlayed && (
                 <div className="relative group">
