@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import {
   Routes,
   Route,
@@ -19,11 +19,16 @@ import { PartyLeaderboard } from './components/PartyLeaderboard';
 import { GbeduLogo } from './components/GbeduLogo';
 import { ProfileModal } from './components/ProfileModal';
 import { JoinRoomModal } from './components/JoinRoomModal';
+import { SettingsScreen } from './components/SettingsScreen';
+import { RoomsScreen } from './components/RoomsScreen';
+import { MenuDropdown, MenuItemData } from './components/MenuDropdown';
+import { InstallPromptSheet } from './components/InstallPromptSheet';
+import { usePWAInstall } from './hooks/usePWAInstall';
 import { soundEngine } from './audio/audioEngine';
 import {
   Home,
   Gamepad2,
-  Hash,
+  Menu as MenuIcon,
   Trophy,
   User,
   Volume2,
@@ -31,6 +36,9 @@ import {
   LogOut,
   Sparkles,
   X,
+  Settings,
+  DoorOpen,
+  Download,
 } from 'lucide-react';
 
 // Lazy-load GamePickerSheet for fast first paint
@@ -38,7 +46,7 @@ const GamePickerSheet = lazy(() =>
   import('./components/GamePickerSheet').then((m) => ({ default: m.GamePickerSheet }))
 );
 
-type NavTabId = 'home' | 'games' | 'rooms' | 'ranks' | 'profile';
+type NavTabId = 'home' | 'games' | 'menu' | 'ranks' | 'profile';
 type AppSubView = 'home' | 'beatmaker' | 'lyrics' | 'guess' | 'ranks';
 
 export const App: React.FC = () => {
@@ -62,6 +70,15 @@ export const App: React.FC = () => {
   const [activeSubView, setActiveSubView] = useState<AppSubView>('home');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isJoinRoomOpen, setIsJoinRoomOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const {
+    isInstalled,
+    showIOSPrompt,
+    setShowIOSPrompt,
+    triggerInstall,
+  } = usePWAInstall();
 
   // Sync picker state from URL query param (?picker=open)
   const isPickerOpen = searchParams.get('picker') === 'open';
@@ -71,10 +88,11 @@ export const App: React.FC = () => {
     initAuth();
   }, [initAuth]);
 
-  // Clean up body/html scroll lock on route/params change or unmount
+  // Clean up body/html scroll lock on route/params change or unmount & close menu
   useEffect(() => {
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
+    setIsMenuOpen(false);
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
@@ -97,6 +115,7 @@ export const App: React.FC = () => {
 
   const handleOpenPicker = () => {
     soundEngine.playClick();
+    setIsMenuOpen(false);
     const newParams = new URLSearchParams(searchParams);
     newParams.set('picker', 'open');
     navigate({ search: newParams.toString() });
@@ -112,6 +131,7 @@ export const App: React.FC = () => {
   const handleSelectGame = (gameId: string) => {
     soundEngine.playAgogo(true);
     setActiveSubView('home');
+    setIsMenuOpen(false);
     navigate(`/game/${gameId}`);
   };
 
@@ -128,12 +148,15 @@ export const App: React.FC = () => {
 
   const isGameRoute = location.pathname.startsWith('/game/');
 
+  // Active rooms count badge for Menu
+  const activeRoomsCount = currentRoom ? 1 : 0;
+
   // Determine active bottom nav tab
   let activeNavTab: NavTabId = 'home';
   if (isPickerOpen) {
     activeNavTab = 'games';
-  } else if (isJoinRoomOpen) {
-    activeNavTab = 'rooms';
+  } else if (isMenuOpen || location.pathname === '/settings' || location.pathname === '/rooms') {
+    activeNavTab = 'menu';
   } else if (activeSubView === 'ranks') {
     activeNavTab = 'ranks';
   } else if (isProfileOpen) {
@@ -142,6 +165,61 @@ export const App: React.FC = () => {
     activeNavTab = 'home';
   }
 
+  // Menu Dropdown Items (48px rows, icon + label + chevron in this order):
+  // 1. Settings (settings icon): sound, music, notifications, avatar, account, log out
+  // 2. Rooms (door-enter icon): my active and recent rooms, with count badge if any are active
+  // 3. Games (device-gamepad icon): opens the game picker sheet
+  // 4. Install app (download icon): see INSTALL APP below
+  const menuItems: MenuItemData[] = [
+    {
+      id: 'settings',
+      label: 'Settings',
+      subtitle: 'Sound, music, notifications, avatar, account, log out',
+      icon: <Settings className="w-4 h-4 text-[#ff7a00]" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setActiveSubView('home');
+        navigate('/settings');
+      },
+    },
+    {
+      id: 'rooms',
+      label: 'Rooms',
+      subtitle: 'My active and recent rooms',
+      icon: <DoorOpen className="w-4 h-4 text-[#1fd1a0]" />,
+      badge: activeRoomsCount > 0 ? `${activeRoomsCount} ACTIVE` : null,
+      onClick: () => {
+        soundEngine.playClick();
+        setActiveSubView('home');
+        navigate('/rooms');
+      },
+    },
+    {
+      id: 'games',
+      label: 'Games',
+      subtitle: 'Open the game picker sheet',
+      icon: <Gamepad2 className="w-4 h-4 text-[#ffb703]" />,
+      onClick: () => {
+        handleOpenPicker();
+      },
+    },
+    {
+      id: 'install',
+      label: 'Install App',
+      subtitle: 'Install Gbedu Games on your device',
+      icon: <Download className="w-4 h-4 text-rose-400" />,
+      visible: !isInstalled,
+      onClick: async () => {
+        soundEngine.playClick();
+        await triggerInstall((title, body) => {
+          useWhotStore.setState({
+            notification: { title, body },
+          });
+        });
+      },
+    },
+  ];
+
   const bottomNavItems = [
     {
       id: 'home' as NavTabId,
@@ -149,6 +227,7 @@ export const App: React.FC = () => {
       icon: <Home className="w-5 h-5" />,
       onClick: () => {
         soundEngine.playClick();
+        setIsMenuOpen(false);
         setActiveSubView('home');
         navigate('/home');
       },
@@ -158,16 +237,18 @@ export const App: React.FC = () => {
       label: 'Games',
       icon: <Gamepad2 className="w-5 h-5" />,
       onClick: () => {
+        setIsMenuOpen(false);
         handleOpenPicker();
       },
     },
     {
-      id: 'rooms' as NavTabId,
-      label: 'Rooms',
-      icon: <Hash className="w-5 h-5" />,
+      id: 'menu' as NavTabId,
+      label: 'Menu',
+      icon: <MenuIcon className="w-5 h-5" />,
+      ref: menuButtonRef,
       onClick: () => {
         soundEngine.playClick();
-        setIsJoinRoomOpen(true);
+        setIsMenuOpen((prev) => !prev);
       },
     },
     {
@@ -176,6 +257,7 @@ export const App: React.FC = () => {
       icon: <Trophy className="w-5 h-5" />,
       onClick: () => {
         soundEngine.playClick();
+        setIsMenuOpen(false);
         setActiveSubView('ranks');
       },
     },
@@ -185,6 +267,7 @@ export const App: React.FC = () => {
       icon: <User className="w-5 h-5" />,
       onClick: () => {
         soundEngine.playClick();
+        setIsMenuOpen(false);
         setIsProfileOpen(true);
       },
     },
@@ -290,6 +373,14 @@ export const App: React.FC = () => {
               }
             />
             <Route
+              path="/settings"
+              element={<SettingsScreen onOpenProfile={() => setIsProfileOpen(true)} />}
+            />
+            <Route
+              path="/rooms"
+              element={<RoomsScreen onOpenPicker={handleOpenPicker} />}
+            />
+            <Route
               path="/game/:gameId"
               element={<GameLobbyScreen onOpenPicker={handleOpenPicker} />}
             />
@@ -298,7 +389,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* 7. FIXED BOTTOM NAV (5 TABS: Home, Games, Rooms, Ranks, Profile) */}
+      {/* 7. FIXED BOTTOM NAV (5 TABS: Home, Games, Menu, Ranks, Profile) */}
       {/* Hidden during active games (gameView) and on login screen */}
       {!gameView && (
         <nav
@@ -310,8 +401,11 @@ export const App: React.FC = () => {
             return (
               <button
                 key={item.id}
+                ref={item.ref}
                 onClick={item.onClick}
-                className="relative min-w-[44px] min-h-[44px] px-2 py-1 flex-1 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-colors"
+                aria-haspopup={item.id === 'menu' ? 'menu' : undefined}
+                aria-expanded={item.id === 'menu' ? isMenuOpen : undefined}
+                className="relative min-w-[44px] min-h-[44px] px-2 py-1 flex-1 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-colors focus:outline-none"
                 aria-label={item.label}
               >
                 {/* Animated Sliding Active Pill */}
@@ -345,6 +439,23 @@ export const App: React.FC = () => {
           })}
         </nav>
       )}
+
+      {/* Upward-anchored Menu Dropdown Panel */}
+      <MenuDropdown
+        isOpen={isMenuOpen}
+        onClose={() => {
+          setIsMenuOpen(false);
+          menuButtonRef.current?.focus();
+        }}
+        items={menuItems}
+        activeRoomsCount={activeRoomsCount}
+      />
+
+      {/* PWA iOS Safari / Browser Fallback Install Sheet */}
+      <InstallPromptSheet
+        isOpen={showIOSPrompt}
+        onClose={() => setShowIOSPrompt(false)}
+      />
 
       {/* Lazy-Loaded GamePickerSheet */}
       <Suspense fallback={null}>
