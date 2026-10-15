@@ -7,7 +7,7 @@ import { soundEngine } from '../audio/audioEngine';
 interface GameResultModalProps {
   isOpen: boolean;
   winner: string | null; // e.g. 'You', 'Player 1', 'Computer', or 'Draw'
-  isWin: boolean;
+  isWin?: boolean;
   scoreText?: string;
   onPlayAgain: () => void;
   onBackToLobby: () => void;
@@ -16,7 +16,7 @@ interface GameResultModalProps {
 export const GameResultModal: React.FC<GameResultModalProps> = ({
   isOpen,
   winner,
-  isWin,
+  isWin = false,
   scoreText,
   onPlayAgain,
   onBackToLobby,
