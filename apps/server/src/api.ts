@@ -270,3 +270,73 @@ apiRouter.post('/rooms/:roomId/settings', authMiddleware, (req, res) => {
   res.json(result);
 });
 
+// 18. Contact: Submit contact message (with rate limit, length & honeypot anti-spam)
+const contactSubmissions = new Map<string, number[]>();
+
+apiRouter.post('/contact', async (req, res) => {
+  const { name, email, topic, message, honeypot, userId } = req.body;
+
+  // Honeypot anti-spam check
+  if (honeypot) {
+    res.json({ success: true, message: 'Message received' });
+    return;
+  }
+
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    res.status(400).json({ success: false, error: 'Name is required' });
+    return;
+  }
+
+  if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ success: false, error: 'A valid email address is required' });
+    return;
+  }
+
+  const validTopics = ['Feedback', 'Bug report', 'Partnership', 'Other'];
+  if (!topic || !validTopics.includes(topic)) {
+    res.status(400).json({ success: false, error: 'A valid topic must be selected' });
+    return;
+  }
+
+  if (!message || typeof message !== 'string' || message.trim().length < 3 || message.length > 1000) {
+    res.status(400).json({ success: false, error: 'Message must be between 3 and 1000 characters' });
+    return;
+  }
+
+  // Rate limit: max 3 per user/email per hour
+  const rateKey = (userId || email).toLowerCase();
+  const now = Date.now();
+  const oneHourAgo = now - 60 * 60 * 1000;
+  const recentTimes = (contactSubmissions.get(rateKey) || []).filter((t) => t > oneHourAgo);
+
+  if (recentTimes.length >= 3) {
+    res.status(429).json({
+      success: false,
+      error: 'Rate limit reached: Maximum 3 messages per hour. Please try again later.',
+    });
+    return;
+  }
+
+  recentTimes.push(now);
+  contactSubmissions.set(rateKey, recentTimes);
+
+  // If Supabase is available on the server, insert into contact_messages
+  try {
+    const { supabase } = await import('./auth');
+    if (supabase) {
+      await supabase.from('contact_messages').insert({
+        user_id: userId || null,
+        name: name.trim(),
+        email: email.trim(),
+        topic,
+        message: message.trim(),
+        status: 'new',
+      });
+    }
+  } catch (e) {
+    console.warn('[Contact] Supabase insert skipped:', e);
+  }
+
+  res.json({ success: true, message: "Message sent. We'll get back to you soon." });
+});
+

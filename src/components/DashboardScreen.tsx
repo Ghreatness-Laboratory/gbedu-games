@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useWhotStore } from '../store/useWhotStore';
 import {
@@ -8,6 +9,8 @@ import {
   Hash,
   Trophy,
   Sparkles,
+  Users,
+  MessageCircle,
 } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
 import { Avatar } from './Avatar';
@@ -54,6 +57,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onQuickPlay,
   isPickerOpen,
 }) => {
+  const navigate = useNavigate();
   const { user, stats, isAuthLoading } = useWhotStore();
 
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -346,6 +350,56 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       >
         Real-time multiplayer for 2 to 6 players
       </motion.p>
+
+      {/* 7. COMPACT ENTRY CARDS: "Meet the creators" & "Contact us" */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.22 }}
+        className="relative z-10 grid grid-cols-2 gap-2 sm:gap-2.5 shrink-0"
+      >
+        {/* Meet the creators */}
+        <button
+          onClick={() => {
+            soundEngine.playClick();
+            navigate('/creators');
+          }}
+          className="min-h-[46px] p-2.5 rounded-xl bg-[#141d33] hover:bg-[#1a2540] active:scale-[0.98] border border-[#26314d] hover:border-[#ff7a00]/40 text-left transition-all cursor-pointer shadow-md flex items-center gap-2.5 group focus:outline-none focus:ring-1 focus:ring-[#ff7a00]"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#ff7a00]/15 border border-[#ff7a00]/30 flex items-center justify-center shrink-0 text-[#ff7a00] group-hover:scale-105 transition-transform">
+            <Users className="w-4 h-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] sm:text-xs font-black text-white truncate font-display">
+              Meet the creators
+            </p>
+            <p className="text-[9px] sm:text-[10px] text-gray-400 truncate">
+              Ghreatness Laboratory
+            </p>
+          </div>
+        </button>
+
+        {/* Contact us */}
+        <button
+          onClick={() => {
+            soundEngine.playClick();
+            navigate('/contact');
+          }}
+          className="min-h-[46px] p-2.5 rounded-xl bg-[#141d33] hover:bg-[#1a2540] active:scale-[0.98] border border-[#26314d] hover:border-[#1fd1a0]/40 text-left transition-all cursor-pointer shadow-md flex items-center gap-2.5 group focus:outline-none focus:ring-1 focus:ring-[#1fd1a0]"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#1fd1a0]/15 border border-[#1fd1a0]/30 flex items-center justify-center shrink-0 text-[#1fd1a0] group-hover:scale-105 transition-transform">
+            <MessageCircle className="w-4 h-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] sm:text-xs font-black text-white truncate font-display">
+              Contact us
+            </p>
+            <p className="text-[9px] sm:text-[10px] text-gray-400 truncate">
+              We reply fast
+            </p>
+          </div>
+        </button>
+      </motion.div>
 
       {/* Join Room Modal */}
       {isJoinModalOpen && (

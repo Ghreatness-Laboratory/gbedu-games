@@ -39,11 +39,19 @@ import {
   Settings,
   DoorOpen,
   Download,
+  Users,
+  MessageCircle,
 } from 'lucide-react';
 
-// Lazy-load GamePickerSheet for fast first paint
+// Lazy-load sheets and secondary screens for fast first paint
 const GamePickerSheet = lazy(() =>
   import('./components/GamePickerSheet').then((m) => ({ default: m.GamePickerSheet }))
+);
+const CreatorsScreen = lazy(() =>
+  import('./components/CreatorsScreen').then((m) => ({ default: m.CreatorsScreen }))
+);
+const ContactScreen = lazy(() =>
+  import('./components/ContactScreen').then((m) => ({ default: m.ContactScreen }))
 );
 
 type NavTabId = 'home' | 'games' | 'menu' | 'ranks' | 'profile';
@@ -155,7 +163,13 @@ export const App: React.FC = () => {
   let activeNavTab: NavTabId = 'home';
   if (isPickerOpen) {
     activeNavTab = 'games';
-  } else if (isMenuOpen || location.pathname === '/settings' || location.pathname === '/rooms') {
+  } else if (
+    isMenuOpen ||
+    location.pathname === '/settings' ||
+    location.pathname === '/rooms' ||
+    location.pathname === '/creators' ||
+    location.pathname === '/contact'
+  ) {
     activeNavTab = 'menu';
   } else if (activeSubView === 'ranks') {
     activeNavTab = 'ranks';
@@ -170,6 +184,8 @@ export const App: React.FC = () => {
   // 2. Rooms (door-enter icon): my active and recent rooms, with count badge if any are active
   // 3. Games (device-gamepad icon): opens the game picker sheet
   // 4. Install app (download icon): see INSTALL APP below
+  // 5. Meet the Creators (users-group icon): /creators
+  // 6. Contact Us (message-circle icon): /contact
   const menuItems: MenuItemData[] = [
     {
       id: 'settings',
@@ -216,6 +232,30 @@ export const App: React.FC = () => {
             notification: { title, body },
           });
         });
+      },
+    },
+    {
+      id: 'creators',
+      label: 'Meet the Creators',
+      subtitle: 'Ghreatness Laboratory story & ventures',
+      icon: <Users className="w-4 h-4 text-[#ff7a00]" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setIsMenuOpen(false);
+        setActiveSubView('home');
+        navigate('/creators');
+      },
+    },
+    {
+      id: 'contact',
+      label: 'Contact Us',
+      subtitle: 'We reply fast • Feedback & inquiries',
+      icon: <MessageCircle className="w-4 h-4 text-[#1fd1a0]" />,
+      onClick: () => {
+        soundEngine.playClick();
+        setIsMenuOpen(false);
+        setActiveSubView('home');
+        navigate('/contact');
       },
     },
   ];
@@ -383,6 +423,34 @@ export const App: React.FC = () => {
             <Route
               path="/game/:gameId"
               element={<GameLobbyScreen onOpenPicker={handleOpenPicker} />}
+            />
+            <Route
+              path="/creators"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="flex-1 min-h-[50vh] flex items-center justify-center text-xs text-gray-400 font-bold">
+                      Loading creators...
+                    </div>
+                  }
+                >
+                  <CreatorsScreen />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/contact"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="flex-1 min-h-[50vh] flex items-center justify-center text-xs text-gray-400 font-bold">
+                      Loading contact...
+                    </div>
+                  }
+                >
+                  <ContactScreen />
+                </Suspense>
+              }
             />
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>

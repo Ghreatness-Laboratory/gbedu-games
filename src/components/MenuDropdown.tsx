@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, DoorOpen, Gamepad2, Download, ChevronRight } from 'lucide-react';
 
 export interface MenuItemData {
-  id: 'settings' | 'rooms' | 'games' | 'install';
+  id: string;
   label: string;
   subtitle: string;
   icon: React.ReactNode;
