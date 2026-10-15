@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" fill="none">
+  <!-- Sound Waveform at Top -->
+  <g id="waveform" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Green Waveform (Left & Peak) -->
+    <path d="M 155 105 L 178 105 L 190 92 L 202 112 L 216 75 L 228 128 L 242 42 L 250 115" stroke="#009A49" />
+    <!-- Orange Waveform (Right) -->
+    <path d="M 250 115 L 258 52 L 270 112 L 282 82 L 294 105 L 305 98 L 316 105 L 345 105" stroke="#FF7900" />
+  </g>
+
+  <!-- Controller Body (Black with smooth contours) -->
+  <g id="controller">
+    <!-- Main Controller Silhouette -->
+    <path d="M 185 130 
+             C 198 126, 218 120, 250 135 
+             C 282 120, 302 126, 315 130 
+             C 328 135, 342 152, 348 175 
+             C 356 208, 368 250, 362 278 
+             C 358 296, 340 302, 324 286 
+             C 305 268, 292 232, 280 236 
+             C 268 240, 260 252, 250 252 
+             C 240 252, 232 240, 220 236 
+             C 208 232, 195 268, 176 286 
+             C 160 302, 142 296, 138 278 
+             C 132 250, 144 208, 152 175 
+             C 158 152, 172 135, 185 130 Z" 
+          fill="#11161B" 
+          stroke="#1F2937" 
+          stroke-width="3" />
+
+    <!-- Center Chevron Stripes -->
+    <!-- Green inner chevron -->
+    <path d="M 226 150 L 250 182 L 274 150" fill="none" stroke="#009A49" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Orange outer chevron -->
+    <path d="M 233 138 L 250 162 L 267 138" fill="none" stroke="#FF7900" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Left Grip Chevron Patterns -->
+    <g id="left-grip-patterns">
+      <path d="M 148 238 L 168 222 L 180 240" fill="none" stroke="#009A49" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M 143 256 L 163 242" fill="none" stroke="#FF7900" stroke-width="5.5" stroke-linecap="round" />
+      <path d="M 146 270 L 160 258" fill="none" stroke="#009A49" stroke-width="5" stroke-linecap="round" />
+      <polygon points="168,236 177,252 160,252" fill="#FF7900" />
+      <line x1="184" y1="210" x2="198" y2="234" stroke="#009A49" stroke-width="5" stroke-linecap="round" />
+    </g>
+
+    <!-- Right Grip Chevron Patterns -->
+    <g id="right-grip-patterns">
+      <path d="M 352 238 L 332 222 L 320 240" fill="none" stroke="#009A49" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M 357 256 L 337 242" fill="none" stroke="#FF7900" stroke-width="5.5" stroke-linecap="round" />
+      <path d="M 354 270 L 340 258" fill="none" stroke="#FF7900" stroke-width="5" stroke-linecap="round" />
+      <polygon points="332,236 340,252 323,252" fill="#009A49" />
+      <line x1="316" y1="210" x2="302" y2="234" stroke="#FF7900" stroke-width="5" stroke-linecap="round" />
+    </g>
+
+    <!-- Left Controls (D-Pad & Analog Thumbstick in Green) -->
+    <!-- D-Pad -->
+    <g id="d-pad" fill="#009A49">
+      <rect x="180" y="167" width="9" height="26" rx="4" />
+      <rect x="171.5" y="175.5" width="26" height="9" rx="4" />
+      <circle cx="184.5" cy="180" r="2.5" fill="#11161B" />
+    </g>
+    <!-- Left Analog Stick -->
+    <circle cx="212" cy="208" r="14" fill="#009A49" />
+    <circle cx="212" cy="208" r="9" fill="#007A39" />
+
+    <!-- Right Controls (Action Buttons & Analog Thumbstick in Orange) -->
+    <!-- Right Analog Stick -->
+    <circle cx="248" cy="214" r="14" fill="#FF7900" />
+    <circle cx="248" cy="214" r="9" fill="#D96500" />
+    
+    <!-- 4 Geometric Action Buttons (Diamond, Circle, Square, Triangle) -->
+    <!-- Diamond (Top) -->
+    <rect x="296" y="152" width="12" height="12" rx="2" transform="rotate(45 302 158)" fill="#FF7900" />
+    <!-- Square (Left) -->
+    <rect x="278" y="171" width="11" height="11" rx="2" fill="#FF7900" />
+    <!-- Circle (Right) -->
+    <circle cx="324" cy="177" r="6" fill="#FF7900" />
+    <!-- Triangle (Bottom) -->
+    <polygon points="302,192 309,204 295,204" fill="#FF7900" />
+  </g>
+
+  <!-- Typography -->
+  <text x="250" y="365" 
+        text-anchor="middle" 
+        font-family="'Cabinet Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif" 
+        font-weight="900" 
+        font-size="64" 
+        letter-spacing="1" 
+        fill="#FFFFFF">
+    GBEDU
+  </text>
+  <text x="250" y="408" 
+        text-anchor="middle" 
+        font-family="'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif" 
+        font-weight="800" 
+        font-size="32" 
+        letter-spacing="10" 
+        fill="#FFFFFF">
+    GAMES
+  </text>
+</svg>

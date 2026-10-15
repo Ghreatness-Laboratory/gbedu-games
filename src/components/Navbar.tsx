@@ -1,6 +1,7 @@
 import React from 'react';
 import { GameTab, PlayerProfile } from '../types';
 import { Music, Mic2, Disc3, Trophy, Volume2, VolumeX, Sparkles, User, Flame } from 'lucide-react';
+import { GbeduLogo } from './GbeduLogo';
 import { soundEngine } from '../audio/audioEngine';
 
 interface NavbarProps {
@@ -35,24 +36,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between w-full md:w-auto">
           <div 
             onClick={() => setActiveTab('rhythm')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-emerald-500 p-[2px] shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-[#0b0f17] rounded-[10px] flex items-center justify-center text-xl">
-                🥁
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-amber-400 via-rose-400 to-emerald-400 bg-clip-text text-transparent">
-                  GBEDU GAMES
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  AFROBEATS
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-400 font-medium">Ghreatness Lab • FragNaija</p>
-            </div>
+            <GbeduLogo size="sm" />
+            <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              AFROBEATS
+            </span>
           </div>
 
           {/* Mobile Right Action Icons */}

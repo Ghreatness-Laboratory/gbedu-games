@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWhotStore } from '../store/useWhotStore';
 import { User, Sparkles, ArrowRight, ShieldCheck, Play } from 'lucide-react';
+import { GbeduLogo } from './GbeduLogo';
 import { soundEngine } from '../audio/audioEngine';
 
 const AVATARS = ['👑', '🦁', '🕶️', '🧢', '💃', '🪘', '⭐', '🔥'];
@@ -77,19 +78,9 @@ export const AuthScreen: React.FC = () => {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md bg-gradient-to-b from-[#131b2e] to-[#0d131f] border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-        {/* Brand Lockup */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-emerald-500 p-[2px] mx-auto shadow-xl shadow-amber-500/20">
-            <div className="w-full h-full bg-[#0b0f17] rounded-[14px] flex items-center justify-center text-3xl">
-              🥁
-            </div>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-display text-white tracking-tight">
-            GBEDU <span className="text-amber-400">GAMES</span>
-          </h1>
-          <p className="text-xs text-gray-400 font-medium">
-            Multiplayer Naija Whot • Play. Connect. Win.
-          </p>
+        {/* Official Brand Lockup */}
+        <div className="flex flex-col items-center justify-center pt-2">
+          <GbeduLogo size="xl" layout="vertical" />
         </div>
 
         {error && (

@@ -8,6 +8,7 @@ import { BeatMaker } from './components/BeatMaker';
 import { LyricsQuiz } from './components/LyricsQuiz';
 import { GuessMelody } from './components/GuessMelody';
 import { PartyLeaderboard } from './components/PartyLeaderboard';
+import { GbeduLogo } from './components/GbeduLogo';
 import { soundEngine } from './audio/audioEngine';
 import {
   Flame,
@@ -64,27 +65,15 @@ export const App: React.FC = () => {
       {/* Universal Top Header */}
       <header className="sticky top-0 z-40 bg-[#0d1527]/90 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          {/* Logo & Tagline */}
+          {/* Official Logo & Tagline */}
           <div
             onClick={() => setActiveTab('whot')}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-2 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-emerald-500 p-[2px] shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-[#0b0f17] rounded-[10px] flex items-center justify-center text-xl">
-                ★
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight text-white font-display">
-                  GBEDU <span className="text-amber-400">GAMES</span>
-                </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  NAIJA WHOT
-                </span>
-              </div>
-              <p className="text-[10px] text-gray-400 font-medium">Play. Connect. Win.</p>
-            </div>
+            <GbeduLogo size="md" />
+            <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              NAIJA WHOT
+            </span>
           </div>
 
           {/* Nav Tabs (When outside live game) */}
