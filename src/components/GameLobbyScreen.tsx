@@ -35,6 +35,7 @@ import { WordGbeduGame } from '../games/word-gbedu/WordGbeduGame';
 import { WordPlayGame } from '../games/word-play/WordPlayGame';
 import { NaijaTriviaGame } from '../games/naija-trivia/NaijaTriviaGame';
 import { JackpotGame } from '../games/jackpot/JackpotGame';
+import { PoolGame } from '../games/pool/PoolGame';
 import { GameBoard } from './GameBoard';
 import { LobbyScreen } from './LobbyScreen';
 
@@ -187,6 +188,7 @@ export const GameLobbyScreen: React.FC<GameLobbyScreenProps> = ({ onOpenPicker }
         {game.id === 'word-gbedu' && <WordPlayGame onBack={handleExitGame} />}
         {game.id === 'naija-trivia' && <NaijaTriviaGame onBack={handleExitGame} />}
         {game.id === 'jackpot' && <JackpotGame onBack={handleExitGame} />}
+        {game.id === 'pool' && <PoolGame onBack={handleExitGame} />}
         {game.id === 'whot' && <GameBoard />}
       </div>
     );

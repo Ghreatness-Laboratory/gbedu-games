@@ -942,6 +942,138 @@ class SoundEngine {
     osc.start(t);
     osc.stop(t + 0.3);
   }
+
+  // --- GBEDU POOL PROCEDURAL AUDIO ---
+
+  // 1. Cue stick striking cue ball
+  public playCueStrike(power: number = 0.7) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const p = Math.max(0.15, Math.min(1.0, power));
+
+    // Chalk pop
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(450 * p, t);
+    osc.frequency.exponentialRampToValueAtTime(120, t + 0.04);
+
+    gain.gain.setValueAtTime(0.5 * p, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.05);
+
+    // Subtle wooden shaft click
+    this.playRimshot(t);
+  }
+
+  // 2. Ball-to-ball crisp phenolic collision
+  public playBallClack(volume: number = 0.8) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const vol = Math.max(0.05, Math.min(1.2, volume));
+
+    // High snap ping (3200Hz)
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(3200 * (0.95 + Math.random() * 0.1), t);
+    osc1.frequency.exponentialRampToValueAtTime(800, t + 0.025);
+
+    gain1.gain.setValueAtTime(0.7 * vol, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.028);
+
+    osc1.connect(gain1);
+    gain1.connect(this.masterGain);
+    osc1.start(t);
+    osc1.stop(t + 0.03);
+
+    // Resonant ball core (1500Hz)
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1520, t);
+    osc2.frequency.exponentialRampToValueAtTime(400, t + 0.04);
+
+    gain2.gain.setValueAtTime(0.4 * vol, t);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.042);
+
+    osc2.connect(gain2);
+    gain2.connect(this.masterGain);
+    osc2.start(t);
+    osc2.stop(t + 0.045);
+  }
+
+  // 3. Rubber cushion rail bounce
+  public playCushionBounce(speed: number = 0.5) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const s = Math.max(0.1, Math.min(1.0, speed));
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(160 * (0.8 + s * 0.4), t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.07);
+
+    gain.gain.setValueAtTime(0.35 * s, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.09);
+  }
+
+  // 4. Ball dropping into pocket leather / cup
+  public playPocketDrop() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    // Deep hollow thud
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(260, t);
+    osc.frequency.exponentialRampToValueAtTime(75, t + 0.16);
+
+    gain.gain.setValueAtTime(0.65, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.2);
+
+    // Followed by soft track roll
+    setTimeout(() => {
+      this.playSeedDrop(2);
+    }, 90);
+  }
+
+  // 5. Rack Break crash
+  public playRackBreak() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    // Multi-ball cluster crash
+    this.playBallClack(1.2);
+    setTimeout(() => this.playBallClack(1.0), 15);
+    setTimeout(() => this.playBallClack(0.8), 35);
+    setTimeout(() => this.playBallClack(0.6), 65);
+    this.playLogDrum(2);
+  }
 }
 
 

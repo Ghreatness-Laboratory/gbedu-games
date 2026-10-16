@@ -210,8 +210,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
-  // Popular games strip (including Jackpot, Word Play and Naija Trivia among top hits)
-  const popularGameIds = ['jackpot', 'xo', 'word-play', 'whot', 'naija-trivia', 'ludo', 'ayo'];
+  // Popular games strip (including Gbedu Pool, Jackpot, Word Play and Naija Trivia among top hits)
+  const popularGameIds = ['pool', 'jackpot', 'xo', 'word-play', 'whot', 'naija-trivia', 'ludo', 'ayo'];
   const popularGames = popularGameIds
     .map((id) => GAMES_CATALOG.find((g) => g.id === id))
     .filter((g): g is NonNullable<typeof g> => Boolean(g && g.status === 'playable'));
