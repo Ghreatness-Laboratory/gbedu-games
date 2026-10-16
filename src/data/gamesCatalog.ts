@@ -2,7 +2,7 @@ export interface GameDefinition {
   id: string;
   name: string;
   tagline: string;
-  category: 'All' | 'Classic' | 'Board' | 'Word' | 'Strategy';
+  category: 'All' | 'Classic' | 'Board' | 'Word' | 'Strategy' | 'Trivia';
   icon: string;
   iconBg: string;
   colorTheme: string;
@@ -137,6 +137,36 @@ export const GAMES_CATALOG: GameDefinition[] = [
     accentColor: '#84cc16',
   },
   {
+    id: 'word-play',
+    name: 'Word Play',
+    tagline: 'Guess, Scramble, Chain & Search',
+    category: 'Word',
+    icon: '🔤',
+    iconBg: 'from-emerald-500/20 to-teal-500/20',
+    colorTheme: 'text-emerald-400',
+    borderTheme: 'border-emerald-500/30 hover:border-emerald-400',
+    playerCount: '1-6 Players',
+    status: 'playable',
+    description: 'The ultimate Naija word puzzle suite. Play Guess the Word (5-letter flips), Word Scramble, Word Chain vs Odogwu AI, and 10x10 Word Search.',
+    bannerGradient: 'from-emerald-600/30 via-teal-600/20 to-transparent',
+    accentColor: '#1fd1a0',
+  },
+  {
+    id: 'naija-trivia',
+    name: 'Naija Trivia',
+    tagline: 'Nigeria Facts & Culture Quiz',
+    category: 'Trivia',
+    icon: '💡',
+    iconBg: 'from-amber-500/20 to-yellow-500/20',
+    colorTheme: 'text-amber-400',
+    borderTheme: 'border-amber-500/30 hover:border-amber-400',
+    playerCount: '1-2 Players',
+    status: 'playable',
+    description: 'Test your Nigeria knowledge across History, Geography, Afrobeats, Nollywood, Super Eagles, Food, and Street Pidgin with lifelines & streak multipliers.',
+    bannerGradient: 'from-amber-600/30 via-yellow-600/20 to-transparent',
+    accentColor: '#ffb703',
+  },
+  {
     id: 'word-gbedu',
     name: 'Word Gbedu',
     tagline: 'Afro Slang Scramble',
@@ -198,7 +228,7 @@ export const GAMES_CATALOG: GameDefinition[] = [
   },
 ];
 
-export const CATEGORIES = ['All', 'Classic', 'Board', 'Word', 'Strategy'] as const;
+export const CATEGORIES = ['All', 'Classic', 'Board', 'Word', 'Trivia', 'Strategy'] as const;
 
 export function getGameById(id: string): GameDefinition | undefined {
   return GAMES_CATALOG.find((g) => g.id === id);

@@ -210,8 +210,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
-  // Popular games strip (4-5 playable games)
-  const popularGames = GAMES_CATALOG.filter((g) => g.status === 'playable').slice(0, 5);
+  // Popular games strip (including Word Play and Naija Trivia among top hits)
+  const popularGameIds = ['xo', 'word-play', 'naija-trivia', 'whot', 'ludo', 'ayo'];
+  const popularGames = popularGameIds
+    .map((id) => GAMES_CATALOG.find((g) => g.id === id))
+    .filter((g): g is NonNullable<typeof g> => Boolean(g && g.status === 'playable'));
 
   // SKELETON LOADER STATE
   if (isAuthLoading || !user) {
