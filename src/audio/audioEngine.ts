@@ -616,6 +616,189 @@ class SoundEngine {
       this.playVocalAdlib('oshey');
     }
   }
+
+  // --- BIRO BATTLE PROCEDURAL AUDIO ---
+
+  // 1. Swipe launch / flick swish
+  public playFlickSwish(powerNormalized: number = 0.7) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const clampedPower = Math.min(1, Math.max(0.2, powerNormalized));
+
+    // Synthesize airy whoosh using noise buffer + swept bandpass
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.18);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 3.0;
+    filter.frequency.setValueAtTime(300, t);
+    filter.frequency.exponentialRampToValueAtTime(1400 * clampedPower, t + 0.08);
+    filter.frequency.exponentialRampToValueAtTime(350, t + 0.18);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.01, t);
+    gain.gain.linearRampToValueAtTime(0.45 * clampedPower, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    noise.start(t);
+    noise.stop(t + 0.19);
+  }
+
+  // 2. Crisp pen-to-pen impact clack (plastic ballpoint click)
+  public playPenClack(intensity: number = 0.8) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const norm = Math.min(1.2, Math.max(0.2, intensity));
+
+    // High snap oscillator 1 (1800Hz)
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(1850 * (0.9 + Math.random() * 0.2), t);
+    osc1.frequency.exponentialRampToValueAtTime(600, t + 0.035);
+
+    gain1.gain.setValueAtTime(0.6 * norm, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+
+    osc1.connect(gain1);
+    gain1.connect(this.masterGain);
+    osc1.start(t);
+    osc1.stop(t + 0.045);
+
+    // Resonant body ping (920Hz)
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(940, t);
+    osc2.frequency.exponentialRampToValueAtTime(420, t + 0.06);
+
+    gain2.gain.setValueAtTime(0.4 * norm, t);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+
+    osc2.connect(gain2);
+    gain2.connect(this.masterGain);
+    osc2.start(t);
+    osc2.stop(t + 0.065);
+  }
+
+  // 3. Edge scrape / friction against table edge
+  public playEdgeScrape() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.4;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(1600, t);
+    filter.frequency.linearRampToValueAtTime(700, t + 0.12);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    noise.start(t);
+    noise.stop(t + 0.13);
+  }
+
+  // 4. Fall whoosh / plunging off table
+  public playFallWhoosh() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(580, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.5);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, t);
+    filter.frequency.exponentialRampToValueAtTime(200, t + 0.5);
+
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    osc.start(t);
+    osc.stop(t + 0.52);
+
+    // Follow with a muted thud on the floor after 450ms
+    setTimeout(() => {
+      this.playThud();
+    }, 450);
+  }
+
+  // 5. Floor thud impact
+  public playThud() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.15);
+  }
+
+  // 6. Knockout celebration fanfare
+  public playKnockoutFanfare() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Punchy drum + fanfare
+    this.playLogDrum(5, t);
+    this.playSynthNote(659.25, 0.12, t + 0.05); // E5
+    this.playSynthNote(783.99, 0.12, t + 0.12); // G5
+    this.playSynthNote(1046.5, 0.25, t + 0.2); // C6
+    this.playVocalAdlib('oshey');
+  }
 }
 
 

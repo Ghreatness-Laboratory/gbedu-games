@@ -6,11 +6,18 @@ import { soundEngine } from '../audio/audioEngine';
 
 interface GameResultModalProps {
   isOpen: boolean;
-  winner: string | null; // e.g. 'You', 'Player 1', 'Computer', or 'Draw'
+  winner?: string | null; // e.g. 'You', 'Player 1', 'Computer', or 'Draw'
   isWin?: boolean;
   scoreText?: string;
   onPlayAgain: () => void;
-  onBackToLobby: () => void;
+  onBackToLobby?: () => void;
+  onClose?: () => void;
+  outcome?: 'win' | 'draw' | 'lose';
+  title?: string;
+  description?: string;
+  score?: number;
+  coinsEarned?: number;
+  xpEarned?: number;
 }
 
 export const GameResultModal: React.FC<GameResultModalProps> = ({
@@ -20,7 +27,16 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
   scoreText,
   onPlayAgain,
   onBackToLobby,
+  onClose,
+  outcome,
+  title,
+  description,
+  score,
+  coinsEarned,
+  xpEarned,
 }) => {
+  const actualIsWin = isWin || outcome === 'win';
+  const handleBack = onBackToLobby || onClose || onPlayAgain;
   useEffect(() => {
     if (isOpen) {
       const prevBodyOverflow = document.body.style.overflow;
@@ -28,7 +44,7 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
 
-      if (isWin) {
+      if (actualIsWin) {
         soundEngine.playWin();
         try {
           confetti({
@@ -52,11 +68,13 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
     }
-  }, [isOpen, isWin]);
+  }, [isOpen, actualIsWin]);
 
   if (!isOpen) return null;
 
-  const isDraw = winner?.toLowerCase().includes('draw') || winner?.toLowerCase().includes('tie');
+  const isDraw = outcome === 'draw' || winner?.toLowerCase().includes('draw') || winner?.toLowerCase().includes('tie');
+  const displayTitle = title || (actualIsWin ? 'Odogwu Victory!' : isDraw ? 'Honorable Draw!' : 'Gbedu Defeat!');
+  const displaySub = description || (isDraw ? 'Nobody wins this round!' : `${winner || 'Winner'} runs the yard!`);
 
   return (
     <AnimatePresence>
@@ -74,14 +92,14 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
             animate={{ scale: 1, rotate: [0, -10, 10, 0] }}
             transition={{ delay: 0.1, type: 'spring' }}
             className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-4xl shadow-xl ${
-              isWin
+              actualIsWin
                 ? 'bg-gradient-to-tr from-amber-400 to-orange-500 text-black shadow-amber-500/30'
                 : isDraw
                 ? 'bg-gray-700 text-white'
                 : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
             }`}
           >
-            {isWin ? <Trophy className="w-10 h-10 stroke-[2.5]" /> : isDraw ? '🤝' : <Frown className="w-10 h-10" />}
+            {actualIsWin ? <Trophy className="w-10 h-10 stroke-[2.5]" /> : isDraw ? '🤝' : <Frown className="w-10 h-10" />}
           </motion.div>
 
           {/* Big Animated Text */}
@@ -92,7 +110,7 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
               transition={{ delay: 0.2 }}
               className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white uppercase"
             >
-              {isWin ? 'Odogwu Victory!' : isDraw ? 'Honorable Draw!' : 'Gbedu Defeat!'}
+              {displayTitle}
             </motion.h2>
 
             <motion.p
@@ -101,12 +119,17 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
               transition={{ delay: 0.3 }}
               className="text-sm font-bold text-amber-400 mt-1"
             >
-              {isDraw ? 'Nobody wins this round!' : `${winner} runs the yard!`}
+              {displaySub}
             </motion.p>
 
             {scoreText && (
               <p className="text-xs text-gray-400 font-mono mt-1 bg-black/40 py-1 px-3 rounded-lg inline-block border border-white/10">
                 {scoreText}
+              </p>
+            )}
+            {score !== undefined && !scoreText && (
+              <p className="text-xs text-gray-400 font-mono mt-1 bg-black/40 py-1 px-3 rounded-lg inline-block border border-white/10">
+                Score: {score} • +{xpEarned || 50} XP • +{coinsEarned || 10} Coins
               </p>
             )}
           </div>
@@ -131,7 +154,7 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 soundEngine.playClick();
-                onBackToLobby();
+                handleBack();
               }}
               className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer border border-white/10"
             >
