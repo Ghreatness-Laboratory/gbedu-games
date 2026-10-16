@@ -799,6 +799,149 @@ class SoundEngine {
     this.playSynthNote(1046.5, 0.25, t + 0.2); // C6
     this.playVocalAdlib('oshey');
   }
+
+  // --- JACKPOT PROCEDURAL AUDIO ---
+
+  // 1. Card Slide / Deal
+  public playCardSlide() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    // Card friction texture (highpassed noise sweep)
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.3;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2200, t);
+    filter.frequency.exponentialRampToValueAtTime(800, t + 0.07);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    noise.start(t);
+    noise.stop(t + 0.085);
+  }
+
+  // 2. Card Lock-In confirmation
+  public playLockIn() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    this.playSynthNote(659.25, 0.08, t); // E5
+    this.playSynthNote(987.77, 0.14, t + 0.06); // B5
+    this.playShekere(t);
+  }
+
+  // 3. Simultaneous Pass Whoosh
+  public playPassWhoosh() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.22);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1400, t);
+    filter.frequency.exponentialRampToValueAtTime(400, t + 0.2);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    noise.start(t);
+    noise.stop(t + 0.23);
+  }
+
+  // 4. JACKPOT! Call Shout Fanfare
+  public playJackpotCall() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    // Brass fanfare + talking drum + log drum
+    this.playLogDrum(4, t);
+    this.playTalkingDrum(true, t + 0.05);
+
+    const chord = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    chord.forEach((freq, idx) => {
+      this.playSynthNote(freq, 0.35, t + idx * 0.06);
+    });
+
+    this.playVocalAdlib('oshey');
+  }
+
+  // 5. Tense Clock Tick for last 3 seconds
+  public playTenseTick(urgent: boolean = false) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(urgent ? 1200 : 880, t);
+    osc.frequency.exponentialRampToValueAtTime(urgent ? 600 : 440, t + 0.04);
+
+    gain.gain.setValueAtTime(urgent ? 0.6 : 0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.055);
+  }
+
+  // 6. False Alarm penalty buzz
+  public playFalseAlarm() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.linearRampToValueAtTime(110, t + 0.25);
+
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
 }
 
 

@@ -55,6 +55,10 @@ export const WaitingRoomScreen: React.FC<WaitingRoomScreenProps> = () => {
   // Settings editable state for owner
   const [roundLimit, setRoundLimit] = useState(3);
   const [allowFinishingOnSpecial, setAllowFinishingOnSpecial] = useState(false);
+  const [jackpotWinCondition, setJackpotWinCondition] = useState<'match_set' | 'collect_all'>('match_set');
+  const [jackpotAllowWilds, setJackpotAllowWilds] = useState(true);
+  const [jackpotPassTimer, setJackpotPassTimer] = useState<10 | 15 | 20>(10);
+  const [jackpotPassDirection, setJackpotPassDirection] = useState<'left' | 'right' | 'alternate'>('left');
 
   // Disconnect grace timers for waiting room (30s)
   const [disconnectCounters, setDisconnectCounters] = useState<Record<string, number>>({});
@@ -751,7 +755,9 @@ export const WaitingRoomScreen: React.FC<WaitingRoomScreenProps> = () => {
               <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-xl bg-[#0d1426] border border-[#26314d] text-[11px] text-gray-300">
                 <Sparkles className="w-3.5 h-3.5 text-[#ff7a00]" />
                 <span>
-                  {room.game === 'whot'
+                  {room.game === 'jackpot'
+                    ? `House Rules: ${jackpotWinCondition === 'match_set' ? 'Match 5 Shapes' : 'Collect All 5'} • Wilds: ${jackpotAllowWilds ? 'On' : 'Off'} • Timer: ${jackpotPassTimer}s • 3-6 Players`
+                    : room.game === 'whot'
                     ? 'Special card finishes: Off • 2-6 Players'
                     : room.game === 'xo'
                     ? 'Best of 3 • 2 Players • Street Duel'
@@ -1081,6 +1087,97 @@ export const WaitingRoomScreen: React.FC<WaitingRoomScreenProps> = () => {
                       />
                     </button>
                   </div>
+                )}
+
+                {room.game === 'jackpot' && (
+                  <>
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">Win Condition</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setJackpotWinCondition('match_set')}
+                          className={`py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                            jackpotWinCondition === 'match_set'
+                              ? 'bg-[#ffb703] text-black border-[#ffb703]'
+                              : 'bg-[#0d1426] text-gray-400 border-[#26314d]'
+                          }`}
+                        >
+                          Match 5 Shapes
+                        </button>
+                        <button
+                          onClick={() => setJackpotWinCondition('collect_all')}
+                          className={`py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                            jackpotWinCondition === 'collect_all'
+                              ? 'bg-[#ffb703] text-black border-[#ffb703]'
+                              : 'bg-[#0d1426] text-gray-400 border-[#26314d]'
+                          }`}
+                        >
+                          Collect All 5
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0d1426] border border-[#26314d]">
+                      <div>
+                        <p className="text-xs font-bold text-white">Whot 20 Wild Cards</p>
+                        <p className="text-[10px] text-gray-400">Wild cards count as any shape</p>
+                      </div>
+                      <button
+                        onClick={() => setJackpotAllowWilds(!jackpotAllowWilds)}
+                        className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${
+                          jackpotAllowWilds ? 'bg-[#1fd1a0]' : 'bg-gray-700'
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${
+                            jackpotAllowWilds ? 'left-6' : 'left-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">Pass Timer</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[10, 15, 20].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setJackpotPassTimer(t as 10 | 15 | 20)}
+                            className={`py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                              jackpotPassTimer === t
+                                ? 'bg-[#ff7a00] text-black border-[#ff7a00]'
+                                : 'bg-[#0d1426] text-gray-400 border-[#26314d]'
+                            }`}
+                          >
+                            {t}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-300 block mb-1">Pass Direction</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'left', label: 'Left' },
+                          { id: 'right', label: 'Right' },
+                          { id: 'alternate', label: 'Alternate' },
+                        ].map((d) => (
+                          <button
+                            key={d.id}
+                            onClick={() => setJackpotPassDirection(d.id as 'left' | 'right' | 'alternate')}
+                            className={`py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                              jackpotPassDirection === d.id
+                                ? 'bg-[#ff7a00] text-black border-[#ff7a00]'
+                                : 'bg-[#0d1426] text-gray-400 border-[#26314d]'
+                            }`}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
 
