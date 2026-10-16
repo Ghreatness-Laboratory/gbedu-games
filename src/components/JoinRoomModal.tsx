@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Hash, Users, Sparkles } from 'lucide-react';
+import { X, Play, Hash, Users, Sparkles, WifiOff, Bot } from 'lucide-react';
 import { soundEngine } from '../audio/audioEngine';
 import { useWhotStore } from '../store/useWhotStore';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,20 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({
   const [code, setCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Lock scroll only while modal is open with guaranteed cleanup
   useEffect(() => {
@@ -110,55 +124,82 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">
-                  Enter 4-Letter Room Code
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. K7Q2"
-                  maxLength={6}
-                  value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value.toUpperCase());
-                    setError(null);
-                  }}
-                  autoFocus
-                  className="w-full h-12 bg-[#0d1426] border border-[#26314d] rounded-2xl px-4 text-center font-mono font-black text-xl text-[#ffb703] tracking-widest focus:outline-none focus:border-[#ff7a00]"
-                />
-              </div>
-
-              {error && (
-                <p className="text-xs text-rose-400 font-bold text-center bg-rose-500/10 py-1.5 px-2 rounded-xl border border-rose-500/20">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isJoining || !code.trim()}
-                className="w-full h-12 rounded-2xl bg-[#ff7a00] hover:bg-[#ff8800] active:scale-98 text-black font-display font-black text-sm tracking-wide transition-all shadow-lg shadow-[#ff7a00]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>{isJoining ? 'JOINING ROOM...' : 'JOIN ROOM'}</span>
-              </button>
-
-              {onSelectGamePrompt && (
-                <div className="pt-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onSelectGamePrompt();
-                    }}
-                    className="text-xs text-[#ffb703] hover:underline font-bold"
-                  >
-                    Want to create a room instead? Select a game →
-                  </button>
+            {!isOnline ? (
+              <div className="mt-4 space-y-4 text-center">
+                <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 space-y-2">
+                  <WifiOff className="w-8 h-8 mx-auto text-amber-400" />
+                  <p className="text-sm font-bold text-white">
+                    You&apos;re offline. Play vs Computer or Pass &amp; Play instead.
+                  </p>
+                  <p className="text-xs text-gray-300">
+                    Online room multiplayer requires an active internet connection.
+                  </p>
                 </div>
-              )}
-            </form>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEngine.playClick();
+                    onClose();
+                    navigate('/game/xo');
+                  }}
+                  className="w-full h-12 rounded-2xl bg-[#ff7a00] hover:bg-[#ff8800] text-black font-display font-black text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Bot className="w-4 h-4" />
+                  <span>PLAY VS COMPUTER</span>
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-400 mb-1.5 uppercase tracking-wider">
+                    Enter 4-Letter Room Code
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. K7Q2"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => {
+                      setCode(e.target.value.toUpperCase());
+                      setError(null);
+                    }}
+                    autoFocus
+                    className="w-full h-12 bg-[#0d1426] border border-[#26314d] rounded-2xl px-4 text-center font-mono font-black text-xl text-[#ffb703] tracking-widest focus:outline-none focus:border-[#ff7a00]"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-xs text-rose-400 font-bold text-center bg-rose-500/10 py-1.5 px-2 rounded-xl border border-rose-500/20">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isJoining || !code.trim()}
+                  className="w-full h-12 rounded-2xl bg-[#ff7a00] hover:bg-[#ff8800] active:scale-98 text-black font-display font-black text-sm tracking-wide transition-all shadow-lg shadow-[#ff7a00]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>{isJoining ? 'JOINING ROOM...' : 'JOIN ROOM'}</span>
+                </button>
+
+                {onSelectGamePrompt && (
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onSelectGamePrompt();
+                      }}
+                      className="text-xs text-[#ffb703] hover:underline font-bold"
+                    >
+                      Want to create a room instead? Select a game →
+                    </button>
+                  </div>
+                )}
+              </form>
+            )}
           </motion.div>
         </div>
       )}

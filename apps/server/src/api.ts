@@ -340,3 +340,51 @@ apiRouter.post('/contact', async (req, res) => {
   res.json({ success: true, message: "Message sent. We'll get back to you soon." });
 });
 
+// 19. Matches: Sync offline match result with deduplication
+const syncedMatchIds = new Set<string>();
+
+apiRouter.post('/matches/sync', async (req, res) => {
+  const { id, userId, gameId, outcome, xpEarned, timestamp } = req.body;
+
+  if (!id) {
+    res.status(400).json({ success: false, error: 'Match id is required' });
+    return;
+  }
+
+  // Prevent duplicate processing
+  if (syncedMatchIds.has(id)) {
+    res.json({ success: true, duplicate: true });
+    return;
+  }
+
+  syncedMatchIds.add(id);
+
+  if (userId) {
+    const { getStatsById, supabase } = await import('./auth');
+    const stats = getStatsById(userId);
+    stats.gamesPlayed += 1;
+    if (outcome === 'win') {
+      stats.gamesWon += 1;
+      stats.streak += 1;
+    } else if (outcome === 'loss') {
+      stats.streak = 0;
+    }
+
+    if (supabase) {
+      try {
+        await supabase.from('player_statistics').upsert({
+          user_id: userId,
+          games_played: stats.gamesPlayed,
+          games_won: stats.gamesWon,
+          current_streak: stats.streak,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('[OfflineSync] Supabase stats update skipped:', e);
+      }
+    }
+  }
+
+  res.json({ success: true, matchId: id });
+});
+

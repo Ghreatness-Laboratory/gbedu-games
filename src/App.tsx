@@ -23,6 +23,7 @@ import { SettingsScreen } from './components/SettingsScreen';
 import { RoomsScreen } from './components/RoomsScreen';
 import { MenuDropdown, MenuItemData } from './components/MenuDropdown';
 import { InstallPromptSheet } from './components/InstallPromptSheet';
+import { ConnectionBanner } from './components/ConnectionBanner';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { soundEngine } from './audio/audioEngine';
 import {
@@ -317,16 +318,16 @@ export const App: React.FC = () => {
     <div className="min-h-[100dvh] w-full bg-[#0d1426] text-white flex flex-col select-none pt-[env(safe-area-inset-top)] selection:bg-[#ff7a00] selection:text-black relative">
       {/* 1. SLIM HEADER (48px) */}
       <header className="sticky top-0 z-40 h-12 min-h-[48px] max-h-[48px] bg-[#0d1426] border-b border-[#26314d] px-3 sm:px-4 flex items-center justify-between shrink-0">
-        {/* Logo icon + "GBEDU GAMES" on one line (No 'PLAY • CONNECT • WIN') */}
+        {/* Logo icon + "GBEDU GAMES" on one line (36px logo aligned with title) */}
         <div
           onClick={() => {
             setActiveSubView('home');
             navigate('/home');
           }}
-          className="flex items-center gap-2 cursor-pointer select-none"
+          className="flex items-center gap-2.5 cursor-pointer select-none"
         >
-          <GbeduLogo size="xs" iconOnly={true} />
-          <span className="font-display font-black text-sm tracking-tight text-white whitespace-nowrap">
+          <GbeduLogo size="sm" iconOnly={true} className="w-9 h-9 shrink-0" />
+          <span className="font-display font-black text-base tracking-tight text-white whitespace-nowrap">
             GBEDU <span className="text-[#ff7a00]">GAMES</span>
           </span>
         </div>
@@ -371,6 +372,9 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {/* Connectivity & Offline Sync Status Banner */}
+      <ConnectionBanner />
+
       {/* Main Screen Arena (let content area scroll with bottom padding for fixed nav) */}
       <main
         className={`flex-1 w-full flex flex-col ${
@@ -409,6 +413,15 @@ export const App: React.FC = () => {
                   onOpenPicker={handleOpenPicker}
                   onQuickPlay={(gameId) => navigate(`/game/${gameId}`)}
                   isPickerOpen={isPickerOpen}
+                  isMenuOpen={isMenuOpen}
+                  isInstalled={isInstalled}
+                  onInstall={() => {
+                    triggerInstall((title, body) => {
+                      useWhotStore.setState({
+                        notification: { title, body },
+                      });
+                    });
+                  }}
                 />
               }
             />

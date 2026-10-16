@@ -99,11 +99,15 @@ export const useWhotStore = create<WhotState>((set, get) => {
   const savedUserStr = localStorage.getItem('gbedu_user');
   const savedToken = localStorage.getItem('gbedu_token');
   const initialUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+  const savedStatsStr = localStorage.getItem('gbedu_stats');
+  const initialStats = savedStatsStr
+    ? JSON.parse(savedStatsStr)
+    : { gamesPlayed: 0, gamesWon: 0, totalCards: 0, streak: 0 };
 
   return {
     user: initialUser,
     token: savedToken,
-    stats: { gamesPlayed: 0, gamesWon: 0, totalCards: 0, streak: 0 },
+    stats: initialStats,
     isAuthLoading: false,
 
     isConnected: false,
@@ -164,8 +168,8 @@ export const useWhotStore = create<WhotState>((set, get) => {
       localStorage.setItem('gbedu_token', token);
       set({ user, token });
 
-      // Fetch stats from Supabase if configured
-      if (isSupabaseConfigured) {
+      // Fetch stats from Supabase if configured and online
+      if (isSupabaseConfigured && typeof navigator !== 'undefined' && navigator.onLine) {
         supabase
           .from('player_statistics')
           .select('*')
@@ -173,14 +177,16 @@ export const useWhotStore = create<WhotState>((set, get) => {
           .single()
           .then(({ data }) => {
             if (data) {
-              set({
-                stats: {
-                  gamesPlayed: data.games_played || 0,
-                  gamesWon: data.games_won || 0,
-                  totalCards: data.total_cards_played || 0,
-                  streak: data.current_streak || 0,
-                },
-              });
+              const newStats = {
+                gamesPlayed: data.games_played || 0,
+                gamesWon: data.games_won || 0,
+                totalCards: data.total_cards_played || 0,
+                streak: data.current_streak || 0,
+              };
+              set({ stats: newStats });
+              try {
+                localStorage.setItem('gbedu_stats', JSON.stringify(newStats));
+              } catch {}
             }
           });
       }

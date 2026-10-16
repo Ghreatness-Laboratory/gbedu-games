@@ -5,6 +5,7 @@ import { GameResultModal } from '../../components/GameResultModal';
 import { RotateCcw, Bot, Users, Globe, ArrowLeft, Trophy, Sparkles } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useWhotStore } from '../../store/useWhotStore';
+import { saveMatchResult } from '../../lib/offlineSync';
 
 type CellValue = 'X' | 'O' | null;
 type GameMode = 'ai' | 'pass' | 'online';
@@ -143,13 +144,47 @@ export const XOGame: React.FC<XOGameProps> = ({ onBack }) => {
   const handleGameOver = (winningSymbol: string, line: number[] | null) => {
     setWinningLine(line);
     setWinner(winningSymbol);
-    if (winningSymbol === 'X') {
+    const isWin = winningSymbol === 'X';
+    const isDraw = winningSymbol === 'Draw';
+    const outcome: 'win' | 'loss' | 'draw' = isWin ? 'win' : isDraw ? 'draw' : 'loss';
+
+    if (isWin) {
       setScore((prev) => ({ ...prev, x: prev.x + 1 }));
     } else if (winningSymbol === 'O') {
       setScore((prev) => ({ ...prev, o: prev.o + 1 }));
     } else {
       setScore((prev) => ({ ...prev, ties: prev.ties + 1 }));
     }
+
+    // Persist match result to offline IndexedDB / sync queue with unique ID
+    const xpEarned = isWin ? 150 : isDraw ? 50 : 25;
+    const coinsEarned = isWin ? 30 : 10;
+
+    saveMatchResult({
+      userId: user?.id || 'guest',
+      gameId: 'xo',
+      gameName: 'X & O',
+      mode: mode === 'ai' ? 'ai' : mode === 'pass' ? 'pass' : 'online',
+      outcome,
+      xpEarned,
+      coinsEarned,
+    }).catch(() => {});
+
+    // Instantly update stats in Zustand store & localStorage for zero-lag offline display
+    const currentStats = useWhotStore.getState().stats;
+    const updatedStats = {
+      ...currentStats,
+      gamesPlayed: currentStats.gamesPlayed + 1,
+      gamesWon: isWin ? currentStats.gamesWon + 1 : currentStats.gamesWon,
+      streak: isWin ? (currentStats.streak || 0) + 1 : 0,
+    };
+    useWhotStore.setState({ stats: updatedStats });
+    try {
+      localStorage.setItem('gbedu_stats', JSON.stringify(updatedStats));
+    } catch {
+      // ignore
+    }
+
     setTimeout(() => {
       setIsModalOpen(true);
     }, 500);
