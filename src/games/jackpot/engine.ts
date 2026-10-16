@@ -223,6 +223,7 @@ export function getHandProgress(
 
 // 6. Execute Simultaneous Card Passing Step
 // Every player passes their chosen card (or auto-picked card) to their neighbor simultaneously
+// Respects "Exposed" mandatory shape passing and resets transient statuses (exposed, skipped, frozen)
 export function executeSimultaneousPass(
   players: JackpotPlayer[],
   direction: 'left' | 'right' = 'left',
@@ -235,19 +236,39 @@ export function executeSimultaneousPass(
   const n = players.length;
   if (n < 2) return { updatedPlayers: players, passedSummary: [] };
 
-  // 1. Ensure every player has a card selected to pass
+  // 1. Ensure every player has a card selected to pass, strictly enforcing Exposed rule
   const cardsToPass: JackpotCard[] = [];
 
   players.forEach((p) => {
     let cardToPass: JackpotCard;
 
-    if (p.selectedCardId) {
+    // Check if player is exposed: must pass card of exposedShape if held
+    const exposedShape = p.isExposed ? p.exposedShape : null;
+    const heldExposedCard = exposedShape
+      ? p.hand.find((c) => c.shape === exposedShape || (allowWhotWilds && c.shape === 'whot'))
+      : null;
+
+    if (heldExposedCard) {
+      // Must pass this card!
+      if (p.selectedCardId) {
+        const selected = p.hand.find((c) => c.id === p.selectedCardId);
+        if (selected && (selected.shape === exposedShape || (allowWhotWilds && selected.shape === 'whot'))) {
+          cardToPass = selected;
+        } else {
+          // Player tried to pick non-exposed card; forced to pass exposed card
+          cardToPass = heldExposedCard;
+        }
+      } else {
+        cardToPass = heldExposedCard;
+      }
+    } else if (p.selectedCardId) {
       const found = p.hand.find((c) => c.id === p.selectedCardId);
       cardToPass = found || p.hand[0];
     } else {
       // Auto-pick: choose card that least contributes to goal
       cardToPass = autoPickCardToPass(p.hand, condition, allowWhotWilds);
     }
+
     cardsToPass.push(cardToPass);
   });
 
@@ -271,7 +292,7 @@ export function executeSimultaneousPass(
       card: cardPassedByThisPlayer,
     });
 
-    // Remove passed card, add received card
+    // Remove passed card, add received card (strictly maintaining 5 cards)
     const nextHand = player.hand.filter((c) => c.id !== cardPassedByThisPlayer.id);
     nextHand.push(receivedCard);
 
@@ -283,8 +304,11 @@ export function executeSimultaneousPass(
       selectedCardId: null,
       passedCard: cardPassedByThisPlayer,
       receivedCard: receivedCard,
-      // Clear skip penalty once pass completes
+      // Clear transient round/step statuses
       isSkipped: false,
+      isExposed: false,
+      exposedShape: null,
+      isFrozen: false,
     };
   });
 
@@ -295,13 +319,22 @@ export function executeSimultaneousPass(
 export function autoPickCardToPass(
   hand: JackpotCard[],
   condition: JackpotWinCondition = 'match_set',
-  allowWhotWilds: boolean = true
+  allowWhotWilds: boolean = true,
+  mandatoryShape: Shape | null = null
 ): JackpotCard {
   if (hand.length === 0) {
     return { id: 'empty', shape: 'circle' };
   }
 
-  const { counts, wildCount } = countHandShapes(hand);
+  // If a mandatory shape is exposed, pass it!
+  if (mandatoryShape) {
+    const matching = hand.find(
+      (c) => c.shape === mandatoryShape || (allowWhotWilds && c.shape === 'whot')
+    );
+    if (matching) return matching;
+  }
+
+  const { counts } = countHandShapes(hand);
 
   if (condition === 'match_set') {
     // Find target shape (shape with the most cards, excluding pure whots)
@@ -341,7 +374,7 @@ export function autoPickCardToPass(
   }
 }
 
-// 8. Validate Jackpot Call & Apply False Alarm Penalty
+// 8. Validate Jackpot Call & Apply Points
 export function validateJackpotCall(
   callerId: string,
   players: JackpotPlayer[],
@@ -361,6 +394,10 @@ export function validateJackpotCall(
   const check = checkWinningHand(caller.hand, condition, allowWhotWilds);
 
   if (check.isWin) {
+    // Award 5 competition points for winning the round!
+    caller.points = (caller.points || 0) + 5;
+    caller.score = (caller.score || 0) + 1;
+
     return {
       isValid: true,
       caller,
@@ -375,4 +412,131 @@ export function validateJackpotCall(
       error: 'False alarm! Your hand does not meet the winning condition.',
     };
   }
+}
+
+// 9. Suspect Mechanic: Accusation Validation
+// Accused must hold at least `threshold` (default 3) cards of named shape (Whot wilds count)
+export function validateSuspectAccusation(
+  accusedHand: JackpotCard[],
+  shape: Shape,
+  threshold: number = 3,
+  allowWhotWilds: boolean = true
+): {
+  isCorrect: boolean;
+  matchingCount: number;
+} {
+  const { counts, wildCount } = countHandShapes(accusedHand);
+  const effectiveWilds = allowWhotWilds ? wildCount : 0;
+  const directCount = counts[shape] || 0;
+  const matchingCount = directCount + effectiveWilds;
+
+  return {
+    isCorrect: matchingCount >= threshold,
+    matchingCount,
+  };
+}
+
+// 10. Check if Player Can Accuse (Token & 5s Cooldown & Single Active Accused Validation)
+export function canPlayerAccuse(
+  accuser: JackpotPlayer,
+  accused: JackpotPlayer,
+  currentTime: number = Date.now(),
+  cooldownMs: number = 5000
+): { canAccuse: boolean; reason?: string } {
+  if (accuser.id === accused.id) {
+    return { canAccuse: false, reason: 'You cannot accuse yourself' };
+  }
+  if (accuser.suspectTokens <= 0) {
+    return { canAccuse: false, reason: 'No Suspect tokens remaining this round' };
+  }
+  if (accused.isExposed) {
+    return { canAccuse: false, reason: `${accused.displayName} is already exposed!` };
+  }
+  if (accuser.lastSuspectTimestamp && currentTime - accuser.lastSuspectTimestamp < cooldownMs) {
+    const remainingSec = Math.ceil((cooldownMs - (currentTime - accuser.lastSuspectTimestamp)) / 1000);
+    return { canAccuse: false, reason: `Please wait ${remainingSec}s cooldown before suspecting again` };
+  }
+  return { canAccuse: true };
+}
+
+// 11. Apply Suspect Result
+// Correct: Accuser +1 pt & keeps token; Accused is Exposed (must pass that shape)
+// Wrong: Accuser spends token & gets skipped next pass step; Accused suffers no penalty
+export function applySuspectResult(
+  accuser: JackpotPlayer,
+  accused: JackpotPlayer,
+  shape: Shape,
+  isCorrect: boolean,
+  currentTime: number = Date.now()
+): {
+  updatedAccuser: JackpotPlayer;
+  updatedAccused: JackpotPlayer;
+} {
+  const updatedAccuser = { ...accuser, lastSuspectTimestamp: currentTime };
+  const updatedAccused = { ...accused };
+
+  if (isCorrect) {
+    updatedAccuser.points = (updatedAccuser.points || 0) + 1;
+    updatedAccused.isExposed = true;
+    updatedAccused.exposedShape = shape;
+  } else {
+    updatedAccuser.suspectTokens = Math.max(0, updatedAccuser.suspectTokens - 1);
+    updatedAccuser.isSkipped = true;
+  }
+
+  return { updatedAccuser, updatedAccused };
+}
+
+// 12. Freeze Card Mechanic Validation & Application
+export function validateFreezeCard(
+  freezer: JackpotPlayer,
+  target: JackpotPlayer
+): { canFreeze: boolean; reason?: string } {
+  if (freezer.id === target.id) {
+    return { canFreeze: false, reason: 'Cannot freeze yourself' };
+  }
+  if (freezer.suspectTokens <= 0) {
+    return { canFreeze: false, reason: 'Freezing costs 1 Suspect token' };
+  }
+  if (freezer.hasUsedFreeze) {
+    return { canFreeze: false, reason: 'Freeze card already used this round' };
+  }
+  if (target.isFrozen) {
+    return { canFreeze: false, reason: 'Player is already frozen' };
+  }
+  return { canFreeze: true };
+}
+
+export function applyFreezeCard(
+  freezer: JackpotPlayer,
+  target: JackpotPlayer
+): { updatedFreezer: JackpotPlayer; updatedTarget: JackpotPlayer } {
+  const updatedFreezer = {
+    ...freezer,
+    suspectTokens: Math.max(0, freezer.suspectTokens - 1),
+    hasUsedFreeze: true,
+  };
+  const updatedTarget = {
+    ...target,
+    isFrozen: true,
+  };
+  return { updatedFreezer, updatedTarget };
+}
+
+// 13. Match Winner Check by Points (First to 10, 15, or 20 points)
+export function checkMatchWinnerByPoints(
+  players: JackpotPlayer[],
+  targetPoints: number = 15
+): {
+  isGameOver: boolean;
+  winner: JackpotPlayer | null;
+} {
+  const candidates = players.filter((p) => (p.points || 0) >= targetPoints);
+  if (candidates.length === 0) {
+    return { isGameOver: false, winner: null };
+  }
+
+  // Pick highest points
+  candidates.sort((a, b) => (b.points || 0) - (a.points || 0));
+  return { isGameOver: true, winner: candidates[0] };
 }

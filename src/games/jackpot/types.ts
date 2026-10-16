@@ -28,7 +28,14 @@ export interface JackpotPlayer {
   passedCard: JackpotCard | null;
   receivedCard: JackpotCard | null;
   score: number; // rounds won
-  isSkipped: boolean; // penalty if false call was made
+  points: number; // competition points (first to 15)
+  suspectTokens: number; // 2 per round
+  isExposed: boolean; // exposed by successful suspect
+  exposedShape: Shape | null; // must pass card of this shape
+  isSkipped: boolean; // penalty if false call was made or wrong suspect call
+  isFrozen: boolean; // hand hidden for 1 step (Freeze Card mechanic)
+  hasUsedFreeze: boolean; // 1 per round
+  lastSuspectTimestamp?: number; // 5-second cooldown
   isConnected: boolean;
   disconnectedAt?: number | null;
 }
@@ -40,6 +47,12 @@ export interface JackpotSettings {
   passTimerSeconds: 10 | 15 | 20;
   passDirection: JackpotPassDirection;
   playerCount: number; // 3 to 6
+  // Suspect & Competitive Settings
+  suspectTokensPerRound: 0 | 1 | 2 | 3; // 0 = off, default 2
+  suspectThreshold: 2 | 3 | 4; // default 3 (cards needed to be exposed)
+  targetPoints: 10 | 15 | 20; // default 15
+  shrinkingTimer: boolean; // pass timer shrinks by 1s down to 5s min (default off)
+  allowFreezeCard: boolean; // freeze opponent blind for 1 step (default off)
 }
 
 export interface JackpotHandProgress {
@@ -50,6 +63,17 @@ export interface JackpotHandProgress {
   targetShape?: Shape;
   shapeCounts: Record<Shape, number>;
   wildCount: number;
+}
+
+export interface JackpotSuspectEvent {
+  id: string;
+  accuserId: string;
+  accuserName: string;
+  accusedId: string;
+  accusedName: string;
+  shape: Shape;
+  isCorrect: boolean;
+  timestamp: number;
 }
 
 export interface JackpotGameState {

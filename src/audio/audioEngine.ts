@@ -943,6 +943,53 @@ class SoundEngine {
     osc.stop(t + 0.3);
   }
 
+  // 7. Suspect Accuse Dramatic Spotlight Sting
+  public playSuspectAccuse() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    // Suspense gong + rising synth probe
+    this.playAgogo(false);
+    this.playSynthNote(440, 0.12, t); // A4
+    this.playSynthNote(554.37, 0.18, t + 0.08); // C#5
+    this.playSynthNote(659.25, 0.28, t + 0.16); // E5
+  }
+
+  // 8. Suspect Correct Exposure Fanfare
+  public playSuspectCorrect() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    this.playRimshot(t);
+    this.playSynthNote(587.33, 0.08, t); // D5
+    this.playSynthNote(739.99, 0.1, t + 0.06); // F#5
+    this.playSynthNote(880.0, 0.12, t + 0.12); // A5
+    this.playSynthNote(1174.66, 0.3, t + 0.18); // D6
+    this.playShekere(t + 0.05);
+  }
+
+  // 9. Suspect Wrong Blunder Buzz
+  public playSuspectWrong() {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx || !this.masterGain) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.linearRampToValueAtTime(130, t + 0.22);
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.26);
+    this.playLogDrum(1, t + 0.05);
+  }
+
   // --- GBEDU POOL PROCEDURAL AUDIO ---
 
   // 1. Cue stick striking cue ball
